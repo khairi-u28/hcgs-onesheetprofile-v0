@@ -1,0 +1,1122 @@
+[
+  {
+    "region": "HEAD OFFICE",
+    "area": "HEAD OFFICE",
+    "branchCode": "T000",
+    "branchName": "HEAD OFFICE",
+    "branchType": "HO"
+  },
+  {
+    "region": "DKI,JABAR,PRIME FLEET",
+    "area": "DKI2",
+    "branchCode": "T002",
+    "branchName": "SUNTER",
+    "branchType": "VSP"
+  },
+  {
+    "region": "DKI,JABAR,PRIME FLEET",
+    "area": "DKI2",
+    "branchCode": "T004",
+    "branchName": "BP SUNTER",
+    "branchType": "BP"
+  },
+  {
+    "region": "DKI,JABAR,PRIME FLEET",
+    "area": "DKI2",
+    "branchCode": "T005",
+    "branchName": "PDC SUNTER",
+    "branchType": "PDC"
+  },
+  {
+    "region": "DKI,JABAR,PRIME FLEET",
+    "area": "DKI1",
+    "branchCode": "T007",
+    "branchName": "MANGGA DUA",
+    "branchType": "V"
+  },
+  {
+    "region": "DKI,JABAR,PRIME FLEET",
+    "area": "DKI1",
+    "branchCode": "T008",
+    "branchName": "MUARA KARANG",
+    "branchType": "V"
+  },
+  {
+    "region": "DKI,JABAR,PRIME FLEET",
+    "area": "DKI1",
+    "branchCode": "T009",
+    "branchName": "PLUIT",
+    "branchType": "VSP"
+  },
+  {
+    "region": "DKI,JABAR,PRIME FLEET",
+    "area": "DKI2",
+    "branchCode": "T010",
+    "branchName": "CAO Sunter",
+    "branchType": "CAO"
+  },
+  {
+    "region": "DKI,JABAR,PRIME FLEET",
+    "area": "DKI1",
+    "branchCode": "T011",
+    "branchName": "GLODOK",
+    "branchType": "V"
+  },
+  {
+    "region": "DKI,JABAR,PRIME FLEET",
+    "area": "DKI1",
+    "branchCode": "T012",
+    "branchName": "KAPUK",
+    "branchType": "VSP"
+  },
+  {
+    "region": "DKI,JABAR,PRIME FLEET",
+    "area": "DKI1",
+    "branchCode": "T015",
+    "branchName": "GR GARAGE PIK",
+    "branchType": "SP"
+  },
+  {
+    "region": "DKI,JABAR,PRIME FLEET",
+    "area": "DKI2",
+    "branchCode": "T018",
+    "branchName": "OMNI CHANNEL",
+    "branchType": "DP"
+  },
+  {
+    "region": "DKI,JABAR,PRIME FLEET",
+    "area": "DKI1",
+    "branchCode": "T050",
+    "branchName": "BUMI SERP.DAMAI",
+    "branchType": "VSP"
+  },
+  {
+    "region": "DKI,JABAR,PRIME FLEET",
+    "area": "DKI1",
+    "branchCode": "T052",
+    "branchName": "DAAN MOGOT",
+    "branchType": "VSP"
+  },
+  {
+    "region": "DKI,JABAR,PRIME FLEET",
+    "area": "DKI1",
+    "branchCode": "T053",
+    "branchName": "B&P BSD",
+    "branchType": "BP"
+  },
+  {
+    "region": "DKI,JABAR,PRIME FLEET",
+    "area": "DKI1",
+    "branchCode": "T055",
+    "branchName": "PURI KEMBANGAN",
+    "branchType": "VSP"
+  },
+  {
+    "region": "DKI,JABAR,PRIME FLEET",
+    "area": "DKI1",
+    "branchCode": "T058",
+    "branchName": "BINTARO",
+    "branchType": "VSP"
+  },
+  {
+    "region": "DKI,JABAR,PRIME FLEET",
+    "area": "DKI1",
+    "branchCode": "T059",
+    "branchName": "SLIPI",
+    "branchType": "V"
+  },
+  {
+    "region": "DKI,JABAR,PRIME FLEET",
+    "area": "DKI1",
+    "branchCode": "T061",
+    "branchName": "TANGERANG",
+    "branchType": "VSP"
+  },
+  {
+    "region": "DKI,JABAR,PRIME FLEET",
+    "area": "DKI1",
+    "branchCode": "T062",
+    "branchName": "SERANG",
+    "branchType": "VSP"
+  },
+  {
+    "region": "DKI,JABAR,PRIME FLEET",
+    "area": "DKI1",
+    "branchCode": "T063",
+    "branchName": "CIKUPA",
+    "branchType": "VSP"
+  },
+  {
+    "region": "DKI,JABAR,PRIME FLEET",
+    "area": "DKI1",
+    "branchCode": "T064",
+    "branchName": "ALAM SUTERA",
+    "branchType": "VSP"
+  },
+  {
+    "region": "DKI,JABAR,PRIME FLEET",
+    "area": "DKI1",
+    "branchCode": "T065",
+    "branchName": "BP SERANG",
+    "branchType": "BP"
+  },
+  {
+    "region": "DKI,JABAR,PRIME FLEET",
+    "area": "DKI1",
+    "branchCode": "T066",
+    "branchName": "BSD CITY",
+    "branchType": "VSP"
+  },
+  {
+    "region": "DKI,JABAR,PRIME FLEET",
+    "area": "DKI1",
+    "branchCode": "T067",
+    "branchName": "PASAR KEMIS",
+    "branchType": "VSP"
+  },
+  {
+    "region": "DKI,JABAR,PRIME FLEET",
+    "area": "DKI1",
+    "branchCode": "T068",
+    "branchName": "BP PASAR KEMIS",
+    "branchType": "BP"
+  },
+  {
+    "region": "DKI,JABAR,PRIME FLEET",
+    "area": "DKI1",
+    "branchCode": "T069",
+    "branchName": "PANDEGLANG",
+    "branchType": "VSP"
+  },
+  {
+    "region": "DKI,JABAR,PRIME FLEET",
+    "area": "DKI2",
+    "branchCode": "T100",
+    "branchName": "BEKASI",
+    "branchType": "VSP"
+  },
+  {
+    "region": "DKI,JABAR,PRIME FLEET",
+    "area": "DKI2",
+    "branchCode": "T102",
+    "branchName": "KRAMAT JATI",
+    "branchType": "VSP"
+  },
+  {
+    "region": "DKI,JABAR,PRIME FLEET",
+    "area": "DKI2",
+    "branchCode": "T103",
+    "branchName": "KALIMALANG",
+    "branchType": "VSP"
+  },
+  {
+    "region": "DKI,JABAR,PRIME FLEET",
+    "area": "DKI2",
+    "branchCode": "T105",
+    "branchName": "KELAPA GADING",
+    "branchType": "VSP"
+  },
+  {
+    "region": "DKI,JABAR,PRIME FLEET",
+    "area": "DKI2",
+    "branchCode": "T110",
+    "branchName": "BEKASI BARAT",
+    "branchType": "VSP"
+  },
+  {
+    "region": "DKI,JABAR,PRIME FLEET",
+    "area": "DKI2",
+    "branchCode": "T111",
+    "branchName": "CIKARANG",
+    "branchType": "VSP"
+  },
+  {
+    "region": "DKI,JABAR,PRIME FLEET",
+    "area": "DKI2",
+    "branchCode": "T112",
+    "branchName": "BP BEKASI TIMUR",
+    "branchType": "BP"
+  },
+  {
+    "region": "DKI,JABAR,PRIME FLEET",
+    "area": "DKI2",
+    "branchCode": "T113",
+    "branchName": "CIKARANG UTARA",
+    "branchType": "VSP"
+  },
+  {
+    "region": "DKI,JABAR,PRIME FLEET",
+    "area": "DKI2",
+    "branchCode": "T120",
+    "branchName": "JATIASIH",
+    "branchType": "VSP"
+  },
+  {
+    "region": "DKI,JABAR,PRIME FLEET",
+    "area": "DKI2",
+    "branchCode": "T151",
+    "branchName": "JUANDA",
+    "branchType": "V"
+  },
+  {
+    "region": "DKI,JABAR,PRIME FLEET",
+    "area": "DKI2",
+    "branchCode": "T152",
+    "branchName": "SUDIRMAN",
+    "branchType": "V"
+  },
+  {
+    "region": "DKI,JABAR,PRIME FLEET",
+    "area": "DKI2",
+    "branchCode": "T153",
+    "branchName": "GARUDA",
+    "branchType": "VSP"
+  },
+  {
+    "region": "DKI,JABAR,PRIME FLEET",
+    "area": "DKI2",
+    "branchCode": "T154",
+    "branchName": "ANGKASA",
+    "branchType": "V"
+  },
+  {
+    "region": "DKI,JABAR,PRIME FLEET",
+    "area": "DKI2",
+    "branchCode": "T155",
+    "branchName": "CEMPAKA PUTIH",
+    "branchType": "VSP"
+  },
+  {
+    "region": "DKI,JABAR,PRIME FLEET",
+    "area": "DKI1",
+    "branchCode": "T156",
+    "branchName": "JAYAKARTA",
+    "branchType": "VSP"
+  },
+  {
+    "region": "DKI,JABAR,PRIME FLEET",
+    "area": "DKI2",
+    "branchCode": "T158",
+    "branchName": "PRAMUKA",
+    "branchType": "VSP"
+  },
+  {
+    "region": "DKI,JABAR,PRIME FLEET",
+    "area": "DKI2",
+    "branchCode": "T160",
+    "branchName": "SALEMBA",
+    "branchType": "VSP"
+  },
+  {
+    "region": "DKI,JABAR,PRIME FLEET",
+    "area": "DKI1",
+    "branchCode": "T161",
+    "branchName": "WAHID HASYIM",
+    "branchType": "VSP"
+  },
+  {
+    "region": "DKI,JABAR,PRIME FLEET",
+    "area": "DKI1",
+    "branchCode": "T162",
+    "branchName": "G.S.O & PRY KHS",
+    "branchType": "GSO"
+  },
+  {
+    "region": "DKI,JABAR,PRIME FLEET",
+    "area": "DKI2",
+    "branchCode": "T164",
+    "branchName": "AMBASSADOR",
+    "branchType": "V"
+  },
+  {
+    "region": "DKI,JABAR,PRIME FLEET",
+    "area": "DKI2",
+    "branchCode": "T165",
+    "branchName": "SAMANHUDI",
+    "branchType": "V"
+  },
+  {
+    "region": "DKI,JABAR,PRIME FLEET",
+    "area": "FLEET",
+    "branchCode": "T168",
+    "branchName": "PRIME FLEET",
+    "branchType": "FLEET"
+  },
+  {
+    "region": "DKI,JABAR,PRIME FLEET",
+    "area": "DKI2",
+    "branchCode": "T205",
+    "branchName": "TEBET",
+    "branchType": "VSP"
+  },
+  {
+    "region": "DKI,JABAR,PRIME FLEET",
+    "area": "DKI1",
+    "branchCode": "T207",
+    "branchName": "CILANDAK",
+    "branchType": "VSP"
+  },
+  {
+    "region": "DKI,JABAR,PRIME FLEET",
+    "area": "DKI1",
+    "branchCode": "T209",
+    "branchName": "RADIO DALAM",
+    "branchType": "VSP"
+  },
+  {
+    "region": "DKI,JABAR,PRIME FLEET",
+    "area": "DKI1",
+    "branchCode": "T210",
+    "branchName": "BP CILEDUG",
+    "branchType": "BP"
+  },
+  {
+    "region": "DKI,JABAR,PRIME FLEET",
+    "area": "DKI1",
+    "branchCode": "T211",
+    "branchName": "CILEDUG",
+    "branchType": "VSP"
+  },
+  {
+    "region": "DKI,JABAR,PRIME FLEET",
+    "area": "DKI2",
+    "branchCode": "T212",
+    "branchName": "TEBET SAHARDJO",
+    "branchType": "VSP"
+  },
+  {
+    "region": "DKI,JABAR,PRIME FLEET",
+    "area": "DKI1",
+    "branchCode": "T213",
+    "branchName": "LENTENG AGUNG",
+    "branchType": "VSP"
+  },
+  {
+    "region": "DKI,JABAR,PRIME FLEET",
+    "area": "DKI1",
+    "branchCode": "T215",
+    "branchName": "KRIDA",
+    "branchType": "VSP"
+  },
+  {
+    "region": "DKI,JABAR,PRIME FLEET",
+    "area": "DKI1",
+    "branchCode": "T216",
+    "branchName": "PERMATA HIJAU",
+    "branchType": "VSP"
+  },
+  {
+    "region": "DKI,JABAR,PRIME FLEET",
+    "area": "JABAR",
+    "branchCode": "T250",
+    "branchName": "BDG ASIA AFRIKA",
+    "branchType": "VSP"
+  },
+  {
+    "region": "DKI,JABAR,PRIME FLEET",
+    "area": "JABAR",
+    "branchCode": "T251",
+    "branchName": "BDG S.H.",
+    "branchType": "VSP"
+  },
+  {
+    "region": "DKI,JABAR,PRIME FLEET",
+    "area": "JABAR",
+    "branchCode": "T252",
+    "branchName": "BANDUNG PASTEUR",
+    "branchType": "VSP"
+  },
+  {
+    "region": "DKI,JABAR,PRIME FLEET",
+    "area": "JABAR",
+    "branchCode": "T255",
+    "branchName": "CAO Bandung",
+    "branchType": "CAO"
+  },
+  {
+    "region": "DKI,JABAR,PRIME FLEET",
+    "area": "JABAR",
+    "branchCode": "T257",
+    "branchName": "BP BDG CIBIRU",
+    "branchType": "BP"
+  },
+  {
+    "region": "DKI,JABAR,PRIME FLEET",
+    "area": "JABAR",
+    "branchCode": "T258",
+    "branchName": "BDG SETIABUDI",
+    "branchType": "VSP"
+  },
+  {
+    "region": "DKI,JABAR,PRIME FLEET",
+    "area": "JABAR",
+    "branchCode": "T259",
+    "branchName": "BANDUNG CIBIRU",
+    "branchType": "VSP"
+  },
+  {
+    "region": "DKI,JABAR,PRIME FLEET",
+    "area": "DKI2",
+    "branchCode": "T260",
+    "branchName": "BOGOR",
+    "branchType": "VSP"
+  },
+  {
+    "region": "DKI,JABAR,PRIME FLEET",
+    "area": "JABAR",
+    "branchCode": "T261",
+    "branchName": "CIREBON",
+    "branchType": "VSP"
+  },
+  {
+    "region": "DKI,JABAR,PRIME FLEET",
+    "area": "JABAR",
+    "branchCode": "T262",
+    "branchName": "KARAWANG",
+    "branchType": "VSP"
+  },
+  {
+    "region": "DKI,JABAR,PRIME FLEET",
+    "area": "DKI2",
+    "branchCode": "T264",
+    "branchName": "CIBINONG",
+    "branchType": "VSP"
+  },
+  {
+    "region": "DKI,JABAR,PRIME FLEET",
+    "area": "DKI2",
+    "branchCode": "T265",
+    "branchName": "PDC CIBINONG",
+    "branchType": "PDC"
+  },
+  {
+    "region": "DKI,JABAR,PRIME FLEET",
+    "area": "DKI2",
+    "branchCode": "T266",
+    "branchName": "BP BOGOR YASMIN",
+    "branchType": "BP"
+  },
+  {
+    "region": "DKI,JABAR,PRIME FLEET",
+    "area": "DKI2",
+    "branchCode": "T267",
+    "branchName": "BOGOR YASMIN",
+    "branchType": "VSP"
+  },
+  {
+    "region": "DKI,JABAR,PRIME FLEET",
+    "area": "JABAR",
+    "branchCode": "T269",
+    "branchName": "INDRAMAYU",
+    "branchType": "VSP"
+  },
+  {
+    "region": "DKI,JABAR,PRIME FLEET",
+    "area": "JABAR",
+    "branchCode": "T270",
+    "branchName": "BP-CIREBON",
+    "branchType": "BP"
+  },
+  {
+    "region": "DKI,JABAR,PRIME FLEET",
+    "area": "JABAR",
+    "branchCode": "T271",
+    "branchName": "BP-KARAWANG",
+    "branchType": "BP"
+  },
+  {
+    "region": "DKI,JABAR,PRIME FLEET",
+    "area": "JABAR",
+    "branchCode": "T272",
+    "branchName": "BANDUNG SUCI",
+    "branchType": "VSP"
+  },
+  {
+    "region": "DKI,JABAR,PRIME FLEET",
+    "area": "JABAR",
+    "branchCode": "T273",
+    "branchName": "PURWAKARTA",
+    "branchType": "VSP"
+  },
+  {
+    "region": "DKI,JABAR,PRIME FLEET",
+    "area": "JABAR",
+    "branchCode": "T274",
+    "branchName": "RANCAEKEK",
+    "branchType": "VSP"
+  },
+  {
+    "region": "DKI,JABAR,PRIME FLEET",
+    "area": "JABAR",
+    "branchCode": "T278",
+    "branchName": "SUKABUMI",
+    "branchType": "VSP"
+  },
+  {
+    "region": "DKI,JABAR,PRIME FLEET",
+    "area": "DKI2",
+    "branchCode": "T279",
+    "branchName": "DRAMAGA BOGOR",
+    "branchType": "VSP"
+  },
+  {
+    "region": "DKI,JABAR,PRIME FLEET",
+    "area": "JABAR",
+    "branchCode": "T280",
+    "branchName": "BP SUKABUMI",
+    "branchType": "BP"
+  },
+  {
+    "region": "DKI,JABAR,PRIME FLEET",
+    "area": "JABAR",
+    "branchCode": "T281",
+    "branchName": "MAJALENGKA",
+    "branchType": "VSP"
+  },
+  {
+    "region": "DKI,JABAR,PRIME FLEET",
+    "area": "JABAR",
+    "branchCode": "T282",
+    "branchName": "CIKAMPEK",
+    "branchType": "VSP"
+  },
+  {
+    "region": "DKI,JABAR,PRIME FLEET",
+    "area": "DKI1",
+    "branchCode": "T283",
+    "branchName": "GRAND DEPOK CITY",
+    "branchType": "VSP"
+  },
+  {
+    "region": "DKI,JABAR,PRIME FLEET",
+    "area": "JABAR",
+    "branchCode": "T284",
+    "branchName": "KUNINGAN",
+    "branchType": "VSP"
+  },
+  {
+    "region": "DKI,JABAR,PRIME FLEET",
+    "area": "JABAR",
+    "branchCode": "T288",
+    "branchName": "SOREANG",
+    "branchType": "VSP"
+  },
+  {
+    "region": "JATKALBAL",
+    "area": "JATIM",
+    "branchCode": "T450",
+    "branchName": "SBY SUNGKONO",
+    "branchType": "VSP"
+  },
+  {
+    "region": "JATKALBAL",
+    "area": "JATIM",
+    "branchCode": "T452",
+    "branchName": "SBY BASUKI R.",
+    "branchType": "VSP"
+  },
+  {
+    "region": "JATKALBAL",
+    "area": "JATIM",
+    "branchCode": "T453",
+    "branchName": "SBY WARU",
+    "branchType": "VSP"
+  },
+  {
+    "region": "JATKALBAL",
+    "area": "JATIM",
+    "branchCode": "T455",
+    "branchName": "SBY PECINDILAN",
+    "branchType": "VSP"
+  },
+  {
+    "region": "JATKALBAL",
+    "area": "JATIM",
+    "branchCode": "T456",
+    "branchName": "SBY A.YANI",
+    "branchType": "VSP"
+  },
+  {
+    "region": "JATKALBAL",
+    "area": "JATIM",
+    "branchCode": "T459",
+    "branchName": "SBY JEMURSARI",
+    "branchType": "VSP"
+  },
+  {
+    "region": "JATKALBAL",
+    "area": "JATIM",
+    "branchCode": "T461",
+    "branchName": "SBY KERTAJAYA",
+    "branchType": "VSP"
+  },
+  {
+    "region": "JATKALBAL",
+    "area": "JATIM",
+    "branchCode": "T462",
+    "branchName": "BP SBY WARU",
+    "branchType": "BP"
+  },
+  {
+    "region": "JATKALBAL",
+    "area": "JATIM",
+    "branchCode": "T464",
+    "branchName": "SBY KENJERAN",
+    "branchType": "VSP"
+  },
+  {
+    "region": "JATKALBAL",
+    "area": "JATIM",
+    "branchCode": "T465",
+    "branchName": "TUBAN",
+    "branchType": "VSP"
+  },
+  {
+    "region": "JATKALBAL",
+    "area": "JATIM",
+    "branchCode": "T466",
+    "branchName": "SURABAYA WIYUNG",
+    "branchType": "VSP"
+  },
+  {
+    "region": "JATKALBAL",
+    "area": "JATIM",
+    "branchCode": "T467",
+    "branchName": "MINI BP TUBAN",
+    "branchType": "BP"
+  },
+  {
+    "region": "JATKALBAL",
+    "area": "JATIM",
+    "branchCode": "T470",
+    "branchName": "MALANG",
+    "branchType": "VSP"
+  },
+  {
+    "region": "JATKALBAL",
+    "area": "KALIMANTAN",
+    "branchCode": "T710",
+    "branchName": "PANGKALAN BUN",
+    "branchType": "V"
+  },
+  {
+    "region": "JATKALBAL",
+    "area": "JATIM",
+    "branchCode": "T471",
+    "branchName": "KDR - HASANUDIN",
+    "branchType": "VSP"
+  },
+  {
+    "region": "JATKALBAL",
+    "area": "JATIM",
+    "branchCode": "T472",
+    "branchName": "MADIUN",
+    "branchType": "VSP"
+  },
+  {
+    "region": "JATKALBAL",
+    "area": "JATIM",
+    "branchCode": "T473",
+    "branchName": "JEMBER",
+    "branchType": "VSP"
+  },
+  {
+    "region": "JATKALBAL",
+    "area": "JATIM",
+    "branchCode": "T474",
+    "branchName": "PROBOLINGGO",
+    "branchType": "VSP"
+  },
+  {
+    "region": "JATKALBAL",
+    "area": "JATIM",
+    "branchCode": "T475",
+    "branchName": "BP SINGOSARI",
+    "branchType": "BP"
+  },
+  {
+    "region": "JATKALBAL",
+    "area": "JATIM",
+    "branchCode": "T476",
+    "branchName": "BP JEMBER",
+    "branchType": "BP"
+  },
+  {
+    "region": "JATKALBAL",
+    "area": "JATIM",
+    "branchCode": "T477",
+    "branchName": "MALANG SUKUN",
+    "branchType": "VSP"
+  },
+  {
+    "region": "JATKALBAL",
+    "area": "JATIM",
+    "branchCode": "T479",
+    "branchName": "BANYUWANGI",
+    "branchType": "VSP"
+  },
+  {
+    "region": "JATKALBAL",
+    "area": "JATIM",
+    "branchCode": "T480",
+    "branchName": "KDR - SUHARMAJI",
+    "branchType": "VSP"
+  },
+  {
+    "region": "JATKALBAL",
+    "area": "JATIM",
+    "branchCode": "T482",
+    "branchName": "BP KEDIRI",
+    "branchType": "BP"
+  },
+  {
+    "region": "JATKALBAL",
+    "area": "JATIM",
+    "branchCode": "T483",
+    "branchName": "MANYAR",
+    "branchType": "VSP"
+  },
+  {
+    "region": "JATKALBAL",
+    "area": "JATIM",
+    "branchCode": "T484",
+    "branchName": "TULUNGAGUNG",
+    "branchType": "VSP"
+  },
+  {
+    "region": "JATKALBAL",
+    "area": "JATIM",
+    "branchCode": "T485",
+    "branchName": "JOMBANG",
+    "branchType": "VSP"
+  },
+  {
+    "region": "JATKALBAL",
+    "area": "JATIM",
+    "branchCode": "T486",
+    "branchName": "PASURUAN",
+    "branchType": "VSP"
+  },
+  {
+    "region": "JATKALBAL",
+    "area": "JATIM",
+    "branchCode": "T487",
+    "branchName": "SINGOSARI",
+    "branchType": "VSP"
+  },
+  {
+    "region": "JATKALBAL",
+    "area": "BALI",
+    "branchCode": "T540",
+    "branchName": "DENPASAR",
+    "branchType": "VSP"
+  },
+  {
+    "region": "JATKALBAL",
+    "area": "BALI",
+    "branchCode": "T541",
+    "branchName": "BALI SANUR",
+    "branchType": "VSP"
+  },
+  {
+    "region": "JATKALBAL",
+    "area": "BALI",
+    "branchCode": "T542",
+    "branchName": "TABANAN",
+    "branchType": "VSP"
+  },
+  {
+    "region": "JATKALBAL",
+    "area": "BALI",
+    "branchCode": "T544",
+    "branchName": "BP SANUR",
+    "branchType": "BP"
+  },
+  {
+    "region": "JATKALBAL",
+    "area": "BALI",
+    "branchCode": "T545",
+    "branchName": "GIANYAR",
+    "branchType": "VSP"
+  },
+  {
+    "region": "JATKALBAL",
+    "area": "BALI",
+    "branchCode": "T548",
+    "branchName": "SINGARAJA",
+    "branchType": "VSP"
+  },
+  {
+    "region": "SUMATERA",
+    "area": "SUMBAGUT",
+    "branchCode": "T560",
+    "branchName": "MEDAN S.M. RAJA",
+    "branchType": "VSP"
+  },
+  {
+    "region": "SUMATERA",
+    "area": "SUMBAGUT",
+    "branchCode": "T562",
+    "branchName": "MEDAN GATSU",
+    "branchType": "VSP"
+  },
+  {
+    "region": "SUMATERA",
+    "area": "SUMBAGUT",
+    "branchCode": "T565",
+    "branchName": "BP MEDAN AMPLAS",
+    "branchType": "BP"
+  },
+  {
+    "region": "SUMATERA",
+    "area": "SUMBAGUT",
+    "branchCode": "T566",
+    "branchName": "MEDAN AMPLAS",
+    "branchType": "VSP"
+  },
+  {
+    "region": "SUMATERA",
+    "area": "SUMBAGUT",
+    "branchCode": "T568",
+    "branchName": "MEDAN KRAKATAU",
+    "branchType": "V"
+  },
+  {
+    "region": "SUMATERA",
+    "area": "SUMBAGUT",
+    "branchCode": "T569",
+    "branchName": "BINJAI",
+    "branchType": "VSP"
+  },
+  {
+    "region": "SUMATERA",
+    "area": "SUMBAGUT",
+    "branchCode": "T570",
+    "branchName": "MEDAN PANCING",
+    "branchType": "VSP"
+  },
+  {
+    "region": "SUMATERA",
+    "area": "SUMBAGUT",
+    "branchCode": "T571",
+    "branchName": "MEDAN MARELAN",
+    "branchType": "VSP"
+  },
+  {
+    "region": "SUMATERA",
+    "area": "SUMBAGUT",
+    "branchCode": "T572",
+    "branchName": "ASAHAN",
+    "branchType": "VSP"
+  },
+  {
+    "region": "SUMATERA",
+    "area": "SUMBAGUT",
+    "branchCode": "T573",
+    "branchName": "RANTAU PRAPAT",
+    "branchType": "VSP"
+  },
+  {
+    "region": "SUMATERA",
+    "area": "SUMBAGUT",
+    "branchCode": "T574",
+    "branchName": "TANJUNG MORAWA",
+    "branchType": "VSP"
+  },
+  {
+    "region": "SUMATERA",
+    "area": "SUMBAGUT",
+    "branchCode": "T580",
+    "branchName": "PADANG",
+    "branchType": "VSP"
+  },
+  {
+    "region": "SUMATERA",
+    "area": "SUMBAGUT",
+    "branchCode": "T581",
+    "branchName": "BYPASS PADANG",
+    "branchType": "VSP"
+  },
+  {
+    "region": "SUMATERA",
+    "area": "SUMBAGUT",
+    "branchCode": "T583",
+    "branchName": "BP PADANG",
+    "branchType": "BP"
+  },
+  {
+    "region": "SUMATERA",
+    "area": "SUMBAGUT",
+    "branchCode": "T584",
+    "branchName": "BUKITTINGGI",
+    "branchType": "VSP"
+  },
+  {
+    "region": "SUMATERA",
+    "area": "SUMBAGSEL",
+    "branchCode": "T600",
+    "branchName": "PLMBANG A YANI",
+    "branchType": "VSP"
+  },
+  {
+    "region": "SUMATERA",
+    "area": "SUMBAGSEL",
+    "branchCode": "T601",
+    "branchName": "PLMBANG VETERAN",
+    "branchType": "VSP"
+  },
+  {
+    "region": "SUMATERA",
+    "area": "SUMBAGSEL",
+    "branchCode": "T602",
+    "branchName": "TJ. API-API",
+    "branchType": "VSP"
+  },
+  {
+    "region": "SUMATERA",
+    "area": "SUMBAGSEL",
+    "branchCode": "T605",
+    "branchName": "BP PALEMBANG",
+    "branchType": "BP"
+  },
+  {
+    "region": "SUMATERA",
+    "area": "SUMBAGSEL",
+    "branchCode": "T607",
+    "branchName": "BATURAJA",
+    "branchType": "VSP"
+  },
+  {
+    "region": "SUMATERA",
+    "area": "SUMBAGSEL",
+    "branchCode": "T608",
+    "branchName": "SEKAYU",
+    "branchType": "VSP"
+  },
+  {
+    "region": "SUMATERA",
+    "area": "SUMBAGSEL",
+    "branchCode": "T609",
+    "branchName": "MINI BP BATURAJA",
+    "branchType": "BP"
+  },
+  {
+    "region": "SUMATERA",
+    "area": "SUMBAGSEL",
+    "branchCode": "T660",
+    "branchName": "TJKR H. MENA",
+    "branchType": "VSP"
+  },
+  {
+    "region": "SUMATERA",
+    "area": "SUMBAGSEL",
+    "branchCode": "T661",
+    "branchName": "TJKR R. INTAN",
+    "branchType": "VSP"
+  },
+  {
+    "region": "SUMATERA",
+    "area": "SUMBAGSEL",
+    "branchCode": "T662",
+    "branchName": "BP WAY HALIM",
+    "branchType": "BP"
+  },
+  {
+    "region": "SUMATERA",
+    "area": "SUMBAGSEL",
+    "branchCode": "T663",
+    "branchName": "WAY HALIM",
+    "branchType": "VSP"
+  },
+  {
+    "region": "SUMATERA",
+    "area": "SUMBAGSEL",
+    "branchCode": "T664",
+    "branchName": "TULANG BAWANG",
+    "branchType": "VSP"
+  },
+  {
+    "region": "SUMATERA",
+    "area": "SUMBAGSEL",
+    "branchCode": "T665",
+    "branchName": "KOTABUMI",
+    "branchType": "VSP"
+  },
+  {
+    "region": "SUMATERA",
+    "area": "SUMBAGSEL",
+    "branchCode": "T666",
+    "branchName": "KALIANDA",
+    "branchType": "VSP"
+  },
+  {
+    "region": "JATKALBAL",
+    "area": "KALIMANTAN",
+    "branchCode": "T700",
+    "branchName": "BALIKPAPAN",
+    "branchType": "VSP"
+  },
+  {
+    "region": "JATKALBAL",
+    "area": "KALIMANTAN",
+    "branchCode": "T701",
+    "branchName": "BALIKPAPAN2",
+    "branchType": "VSP"
+  },
+  {
+    "region": "JATKALBAL",
+    "area": "KALIMANTAN",
+    "branchCode": "T703",
+    "branchName": "SAMARINDA",
+    "branchType": "VSP"
+  },
+  {
+    "region": "JATKALBAL",
+    "area": "KALIMANTAN",
+    "branchCode": "T704",
+    "branchName": "BONTANG",
+    "branchType": "VSP"
+  },
+  {
+    "region": "JATKALBAL",
+    "area": "KALIMANTAN",
+    "branchCode": "T706",
+    "branchName": "BP BALIKPAPAN",
+    "branchType": "BP"
+  },
+  {
+    "region": "JATKALBAL",
+    "area": "KALIMANTAN",
+    "branchCode": "T707",
+    "branchName": "BP SAMARINDA",
+    "branchType": "BP"
+  },
+  {
+    "region": "JATKALBAL",
+    "area": "KALIMANTAN",
+    "branchCode": "T711",
+    "branchName": "SANGATTA",
+    "branchType": "VSP"
+  },
+  {
+    "region": "JATKALBAL",
+    "area": "KALIMANTAN",
+    "branchCode": "T712",
+    "branchName": "TENGGARONG",
+    "branchType": "VSP"
+  },
+  {
+    "region": "JATKALBAL",
+    "area": "KALIMANTAN",
+    "branchCode": "T720",
+    "branchName": "PONTIANAK",
+    "branchType": "VSP"
+  },
+  {
+    "region": "JATKALBAL",
+    "area": "KALIMANTAN",
+    "branchCode": "T730",
+    "branchName": "BANJARMASIN",
+    "branchType": "VSP"
+  }
+]

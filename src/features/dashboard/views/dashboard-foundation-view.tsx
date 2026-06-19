@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { PageHero } from "@/components/shared/page-hero";
 import { usePortalStore } from "@/store/portal-store";
 import { getOrganizationBranches } from "@/lib/organization";
-import { Users, AlertTriangle, Target, TrendingUp, ChevronRight, Lightbulb, UserMinus, BookX } from "lucide-react";
+import { Users, AlertTriangle, Target, TrendingUp, ChevronRight, Lightbulb } from "lucide-react";
 
 const HAV_CATEGORIES = [
   "Strong Performer",
@@ -18,11 +18,11 @@ const HAV_CATEGORIES = [
 ];
 
 const HAV_COLORS: Record<string, string> = {
-  "Strong Performer": "#10b981",
-  "Candidate": "#3b82f6",
-  "Career Person": "#6366f1",
-  "Potential Candidate": "#f59e0b",
-  "Unfit Employee": "#ef4444",
+  "Strong Performer": "#10b981", // emerald-500
+  "Candidate": "#3b82f6", // blue-500
+  "Career Person": "#6366f1", // indigo-500
+  "Potential Candidate": "#f59e0b", // amber-500
+  "Unfit Employee": "#ef4444", // red-500
 };
 
 function formatPercent(value: number | null) {
@@ -63,6 +63,7 @@ export function DashboardFoundationView() {
     havMix,
     branchSummaries,
     regionSummaries,
+    intelligence,
   } = useMemo(() => {
     let sumKpi = 0;
     let countKpi = 0;
@@ -71,7 +72,7 @@ export function DashboardFoundationView() {
     let unfitCount = 0;
 
     const branchAggMap = new Map<string, { count: number; sumKpi: number; countKpi: number }>();
-    const regionAggMap = new Map<string, { count: number; sumKpi: number; countKpi: number; sumHav: number; countHav: number; notStartedCount: number; unfitCount: number }>();
+    const regionAggMap = new Map<string, { count: number; sumKpi: number; countKpi: number; sumHav: number; countHav: number; unfitCount: number; devBacklogCount: number; strongCount: number }>();
 
     for (const emp of employees) {
       const kpi = emp.kpiFullYear ?? emp.kpiMidYear;
@@ -99,7 +100,7 @@ export function DashboardFoundationView() {
       const branchInfo = branchMap.get(code);
       const regionId = branchInfo?.region ?? "Unknown Region";
       if (!regionAggMap.has(regionId)) {
-        regionAggMap.set(regionId, { count: 0, sumKpi: 0, countKpi: 0, sumHav: 0, countHav: 0, notStartedCount: 0, unfitCount: 0 });
+        regionAggMap.set(regionId, { count: 0, sumKpi: 0, countKpi: 0, sumHav: 0, countHav: 0, unfitCount: 0, devBacklogCount: 0, strongCount: 0 });
       }
       const rStats = regionAggMap.get(regionId)!;
       rStats.count++;
@@ -111,33 +112,47 @@ export function DashboardFoundationView() {
         rStats.sumHav += emp.havScore;
         rStats.countHav++;
       }
-      if (emp.developmentProgramStatus === "Not Started" || !emp.developmentProgramStatus) rStats.notStartedCount++;
       if (emp.havCategory === "Unfit Employee") rStats.unfitCount++;
+      if (emp.havCategory === "Strong Performer") rStats.strongCount++;
+      if (emp.developmentProgramStatus === "Not Started") rStats.devBacklogCount++;
     }
+
+    const branchSummariesList = Array.from(branchAggMap.entries()).map(([code, stats]) => ({
+      branchCode: code,
+      branchName: branchMap.get(code)?.branchName ?? code,
+      employeeCount: stats.count,
+      avgKpi: stats.countKpi > 0 ? stats.sumKpi / stats.countKpi : NaN,
+    }));
+
+    const regionSummariesList = Array.from(regionAggMap.entries()).map(([regionId, stats]) => ({
+      regionId,
+      employeeCount: stats.count,
+      avgKpi: stats.countKpi > 0 ? stats.sumKpi / stats.countKpi : NaN,
+      avgHav: stats.countHav > 0 ? stats.sumHav / stats.countHav : NaN,
+      unfitRatio: stats.count > 0 ? stats.unfitCount / stats.count : 0,
+      devBacklogCount: stats.devBacklogCount,
+      talentDensity: stats.count > 0 ? stats.strongCount / stats.count : 0,
+    })).sort((a, b) => b.employeeCount - a.employeeCount);
+
+    const validRegions = regionSummariesList.filter(r => r.regionId !== "Unknown Region" && r.employeeCount > 0);
+    const lowestKpiRegion = validRegions.length > 0 ? [...validRegions].sort((a, b) => a.avgKpi - b.avgKpi)[0] : null;
+    const highestDevBacklogRegion = validRegions.length > 0 ? [...validRegions].sort((a, b) => b.devBacklogCount - a.devBacklogCount)[0] : null;
+    const highestUnfitRegion = validRegions.length > 0 ? [...validRegions].sort((a, b) => b.unfitRatio - a.unfitRatio)[0] : null;
+    const highestTalentRegion = validRegions.length > 0 ? [...validRegions].sort((a, b) => b.talentDensity - a.talentDensity)[0] : null;
 
     return {
       nationalKpi: countKpi > 0 ? sumKpi / countKpi : NaN,
       nationalHav: countHav > 0 ? sumHav / countHav : NaN,
       unfitCount,
-      havMix: getStaticDistribution(
-        employees.map((e) => e.havCategory),
-        HAV_CATEGORIES
-      ),
-      branchSummaries: Array.from(branchAggMap.entries()).map(([code, stats]) => ({
-        branchCode: code,
-        branchName: branchMap.get(code)?.branchName ?? code,
-        employeeCount: stats.count,
-        avgKpi: stats.countKpi > 0 ? stats.sumKpi / stats.countKpi : NaN,
-      })),
-      regionSummaries: Array.from(regionAggMap.entries()).map(([regionId, stats]) => ({
-        regionId,
-        employeeCount: stats.count,
-        avgKpi: stats.countKpi > 0 ? stats.sumKpi / stats.countKpi : NaN,
-        avgHav: stats.countHav > 0 ? stats.sumHav / stats.countHav : NaN,
-        notStartedCount: stats.notStartedCount,
-        unfitCount: stats.unfitCount,
-        unfitPct: stats.count > 0 ? stats.unfitCount / stats.count : 0,
-      })).sort((a, b) => b.employeeCount - a.employeeCount),
+      havMix: getStaticDistribution(employees.map((e) => e.havCategory), HAV_CATEGORIES),
+      branchSummaries: branchSummariesList,
+      regionSummaries: regionSummariesList,
+      intelligence: {
+        lowestKpiRegion,
+        highestDevBacklogRegion,
+        highestUnfitRegion,
+        highestTalentRegion,
+      }
     };
   }, [employees, branchMap]);
 
@@ -147,17 +162,6 @@ export function DashboardFoundationView() {
       .sort((a, b) => a.avgKpi - b.avgKpi)
       .slice(0, 5);
   }, [branchSummaries]);
-
-  const intelligence = useMemo(() => {
-    const validRegions = regionSummaries.filter(r => r.employeeCount > 0 && r.regionId !== "Unknown Region");
-    if (validRegions.length === 0) return null;
-
-    const lowestKpiRegion = [...validRegions].filter(r => !Number.isNaN(r.avgKpi)).sort((a, b) => a.avgKpi - b.avgKpi)[0];
-    const highestDevBacklogRegion = [...validRegions].sort((a, b) => b.notStartedCount - a.notStartedCount)[0];
-    const highestUnfitRegion = [...validRegions].sort((a, b) => b.unfitPct - a.unfitPct)[0];
-
-    return { lowestKpiRegion, highestDevBacklogRegion, highestUnfitRegion };
-  }, [regionSummaries]);
 
   return (
     <div className="space-y-8 pb-10">
@@ -227,51 +231,41 @@ export function DashboardFoundationView() {
         </Card>
       </div>
 
-      {/* Row 1.5: Intelligence Layer */}
-      {intelligence && (
-        <div className="grid gap-4 md:grid-cols-3">
-          <Card className="rounded-[24px] border-none shadow-sm bg-indigo-50/80">
-            <CardContent className="p-5 flex gap-4">
-              <div className="flex shrink-0 items-center justify-center w-10 h-10 rounded-full bg-indigo-100 text-indigo-600">
-                <Target size={20} />
-              </div>
-              <div>
-                <div className="text-xs font-bold uppercase tracking-wider text-indigo-600 mb-1">Lowest KPI Region</div>
-                <div className="font-semibold text-slate-800">{intelligence.lowestKpiRegion?.regionId}</div>
-                <div className="text-sm text-[var(--muted)]">Average KPI: <span className="font-medium text-slate-700">{formatPercent(intelligence.lowestKpiRegion?.avgKpi)}</span></div>
-              </div>
-            </CardContent>
-          </Card>
+      {/* Intelligence Brief */}
+      <Card className="rounded-[24px] border border-amber-200 bg-amber-50/50 shadow-sm">
+        <CardHeader className="pb-2 border-b border-amber-200/50 px-6 py-4">
+          <CardTitle className="text-base flex items-center gap-2 text-amber-800">
+            <Lightbulb size={18} className="text-amber-600" />
+            Intelligence Brief
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="p-6">
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+            <div className="space-y-1">
+              <div className="text-xs font-bold uppercase text-amber-700/70 tracking-wider">Lowest KPI Region</div>
+              <div className="font-semibold text-slate-800">{intelligence.lowestKpiRegion?.regionId ?? "--"}</div>
+              <div className="text-xs text-[var(--muted)]">{formatPercent(intelligence.lowestKpiRegion?.avgKpi ?? null)}</div>
+            </div>
+            <div className="space-y-1">
+              <div className="text-xs font-bold uppercase text-amber-700/70 tracking-wider">Highest Dev Backlog</div>
+              <div className="font-semibold text-slate-800">{intelligence.highestDevBacklogRegion?.regionId ?? "--"}</div>
+              <div className="text-xs text-[var(--muted)]">{intelligence.highestDevBacklogRegion?.devBacklogCount ?? 0} employees</div>
+            </div>
+            <div className="space-y-1">
+              <div className="text-xs font-bold uppercase text-amber-700/70 tracking-wider">Highest Unfit Concentration</div>
+              <div className="font-semibold text-slate-800">{intelligence.highestUnfitRegion?.regionId ?? "--"}</div>
+              <div className="text-xs text-[var(--muted)]">{formatPercent(intelligence.highestUnfitRegion?.unfitRatio ?? null)}</div>
+            </div>
+            <div className="space-y-1">
+              <div className="text-xs font-bold uppercase text-amber-700/70 tracking-wider">Highest Talent Density</div>
+              <div className="font-semibold text-slate-800">{intelligence.highestTalentRegion?.regionId ?? "--"}</div>
+              <div className="text-xs text-[var(--muted)]">{formatPercent(intelligence.highestTalentRegion?.talentDensity ?? null)}</div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
 
-          <Card className="rounded-[24px] border-none shadow-sm bg-amber-50/80">
-            <CardContent className="p-5 flex gap-4">
-              <div className="flex shrink-0 items-center justify-center w-10 h-10 rounded-full bg-amber-100 text-amber-600">
-                <BookX size={20} />
-              </div>
-              <div>
-                <div className="text-xs font-bold uppercase tracking-wider text-amber-600 mb-1">Highest Dev Backlog</div>
-                <div className="font-semibold text-slate-800">{intelligence.highestDevBacklogRegion?.regionId}</div>
-                <div className="text-sm text-[var(--muted)]"><span className="font-medium text-slate-700">{intelligence.highestDevBacklogRegion?.notStartedCount}</span> employees without programs</div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="rounded-[24px] border-none shadow-sm bg-red-50/80">
-            <CardContent className="p-5 flex gap-4">
-              <div className="flex shrink-0 items-center justify-center w-10 h-10 rounded-full bg-red-100 text-red-600">
-                <UserMinus size={20} />
-              </div>
-              <div>
-                <div className="text-xs font-bold uppercase tracking-wider text-red-600 mb-1">Highest Unfit Concentration</div>
-                <div className="font-semibold text-slate-800">{intelligence.highestUnfitRegion?.regionId}</div>
-                <div className="text-sm text-[var(--muted)]"><span className="font-medium text-slate-700">{formatPercent(intelligence.highestUnfitRegion?.unfitPct)}</span> unfit ratio</div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      )}
-
-      {/* Row 2: Visualization Layer */}
+      {/* Row 2: Visualization & Insight Layer */}
       <div className="grid gap-6 xl:grid-cols-[1fr_1.5fr]">
         <Card className="rounded-[24px] border border-[var(--border)] shadow-sm bg-white">
           <CardHeader className="pb-2 border-b border-[var(--border)] px-6 py-4">

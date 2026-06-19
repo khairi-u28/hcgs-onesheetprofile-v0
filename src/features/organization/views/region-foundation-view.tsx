@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { PageHero } from "@/components/shared/page-hero";
 import { usePortalStore } from "@/store/portal-store";
 import { getOrganizationBranches } from "@/lib/organization";
+import { Lightbulb } from "lucide-react";
 
 const pkScoreMap: Record<string, number> = {
   BS: 5,
@@ -104,8 +105,18 @@ export function RegionFoundationView({ regionId }: { regionId: string }) {
         summary.employees.map((employee) => employee.developmentProgramStatus),
         DEV_STATUSES
       ),
+      unfitCount: summary.employees.filter((e) => e.havCategory === "Unfit Employee").length,
     }));
   }, [regionBranches, regionEmployees]);
+
+  const intelligence = useMemo(() => {
+    const validAreas = areaSummaries.filter(a => a.employeeCount > 0);
+    const lowestKpiArea = validAreas.length > 0 ? [...validAreas].sort((a,b) => a.avgKpi - b.avgKpi)[0] : null;
+    const highestRiskArea = validAreas.length > 0 ? [...validAreas].sort((a,b) => (b.unfitCount / b.employeeCount) - (a.unfitCount / a.employeeCount))[0] : null;
+    const bestArea = validAreas.length > 0 ? [...validAreas].sort((a,b) => b.avgKpi - a.avgKpi)[0] : null;
+    
+    return { lowestKpiArea, highestRiskArea, bestArea };
+  }, [areaSummaries]);
 
   const employeeCount = regionEmployees.length;
   const averageKpi = average(
@@ -143,6 +154,34 @@ export function RegionFoundationView({ regionId }: { regionId: string }) {
         <SummaryCard label="Average HAV" value={formatDecimal(averageHav)} />
         <SummaryCard label="Area Count" value={areaCount} />
       </div>
+
+      <Card className="rounded-[24px] border border-amber-200 bg-amber-50/50 shadow-sm">
+        <CardHeader className="pb-2 border-b border-amber-200/50 px-6 py-4">
+          <CardTitle className="text-base flex items-center gap-2 text-amber-800">
+            <Lightbulb size={18} className="text-amber-600" />
+            Region Intelligence Brief
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="p-6">
+          <div className="grid gap-4 md:grid-cols-3">
+            <div className="space-y-1">
+              <div className="text-xs font-bold uppercase text-amber-700/70 tracking-wider">Lowest KPI Area</div>
+              <div className="font-semibold text-slate-800">{intelligence.lowestKpiArea?.area ?? "--"}</div>
+              <div className="text-xs text-[var(--muted)]">{formatPercent(intelligence.lowestKpiArea?.avgKpi ?? null)}</div>
+            </div>
+            <div className="space-y-1">
+              <div className="text-xs font-bold uppercase text-amber-700/70 tracking-wider">Highest Risk Area</div>
+              <div className="font-semibold text-slate-800">{intelligence.highestRiskArea?.area ?? "--"}</div>
+              <div className="text-xs text-[var(--muted)]">{formatPercent(intelligence.highestRiskArea ? intelligence.highestRiskArea.unfitCount / intelligence.highestRiskArea.employeeCount : null)} Unfit</div>
+            </div>
+            <div className="space-y-1">
+              <div className="text-xs font-bold uppercase text-amber-700/70 tracking-wider">Best Performing Area</div>
+              <div className="font-semibold text-slate-800">{intelligence.bestArea?.area ?? "--"}</div>
+              <div className="text-xs text-[var(--muted)]">{formatPercent(intelligence.bestArea?.avgKpi ?? null)}</div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
 
       <div className="grid gap-6 xl:grid-cols-[1.1fr_0.9fr]">
         <SectionCard title="Region Snapshot">

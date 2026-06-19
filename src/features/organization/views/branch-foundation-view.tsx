@@ -9,6 +9,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { PageHero } from "@/components/shared/page-hero";
 import { usePortalStore } from "@/store/portal-store";
 import { getOrganizationByBranchCode } from "@/lib/organization";
+import { Lightbulb, UserRound, Award, AlertTriangle, Hammer } from "lucide-react";
+import { getKpiScore, isPromotionCandidate, isCriticalIntervention, isAttentionRequired, isDevelopmentBacklog } from "@/lib/intelligence";
 
 const HAV_CATEGORIES = [
   "Strong Performer",
@@ -87,6 +89,7 @@ export function BranchFoundationView({
 }) {
   const router = useRouter();
   const employees = usePortalStore((state) => state.employees);
+  const trainingHistory = usePortalStore((state) => state.trainingHistory);
   const branch = getOrganizationByBranchCode(branchCode);
 
   const branchEmployees = useMemo(
@@ -129,6 +132,26 @@ export function BranchFoundationView({
   const devConversionRate = branchEmployees.length > 0 
     ? (devParticipants / branchEmployees.length) 
     : 0;
+
+  const branchIntelligence = useMemo(() => {
+    const promotionCandidates = branchEmployees
+      .filter((e) => isPromotionCandidate(e))
+      .sort((a, b) => getKpiScore(b) - getKpiScore(a));
+
+    const criticalInterventions = branchEmployees
+      .filter((e) => isCriticalIntervention(e))
+      .sort((a, b) => getKpiScore(a) - getKpiScore(b));
+
+    const attentionRequired = branchEmployees
+      .filter((e) => !isCriticalIntervention(e) && isAttentionRequired(e, trainingHistory))
+      .sort((a, b) => getKpiScore(a) - getKpiScore(b));
+
+    const devBacklog = branchEmployees
+      .filter((e) => isDevelopmentBacklog(e))
+      .sort((a, b) => getKpiScore(b) - getKpiScore(a));
+
+    return { promotionCandidates, criticalInterventions, attentionRequired, devBacklog };
+  }, [branchEmployees, trainingHistory]);
 
   // Pagination State
   const [pageIndex, setPageIndex] = useState(0);
@@ -173,6 +196,78 @@ export function BranchFoundationView({
           subValue={`${devParticipants} Participants`} 
         />
       </div>
+
+      <Card className="rounded-[24px] border border-amber-200 bg-amber-50/50 shadow-sm">
+        <CardHeader className="pb-2 border-b border-amber-200/50 px-6 py-4 flex flex-row items-center justify-between">
+          <CardTitle className="text-base flex items-center gap-2 text-amber-800">
+            <Lightbulb size={18} className="text-amber-600" />
+            Branch Workforce Intelligence
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="p-6">
+          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+            <div>
+              <div className="flex items-center gap-2 text-xs font-bold uppercase text-emerald-700 tracking-wider mb-3">
+                <Award size={14} /> Promotion Candidates
+              </div>
+              <div className="space-y-2">
+                {branchIntelligence.promotionCandidates.slice(0, 3).map(e => (
+                  <div key={e.nrp} className="bg-white/80 rounded-md p-2 text-sm border border-emerald-100 shadow-sm">
+                    <div className="font-semibold">{e.name}</div>
+                    <div className="text-xs text-[var(--muted)]">KPI: {formatPercent(getKpiScore(e))} · PK: {e.pk2025}</div>
+                  </div>
+                ))}
+                {branchIntelligence.promotionCandidates.length === 0 && <div className="text-xs text-[var(--muted)]">None found</div>}
+              </div>
+            </div>
+
+            <div>
+              <div className="flex items-center gap-2 text-xs font-bold uppercase text-red-700 tracking-wider mb-3">
+                <AlertTriangle size={14} /> Critical Intervention
+              </div>
+              <div className="space-y-2">
+                {branchIntelligence.criticalInterventions.slice(0, 3).map(e => (
+                  <div key={e.nrp} className="bg-white/80 rounded-md p-2 text-sm border border-red-100 shadow-sm">
+                    <div className="font-semibold">{e.name}</div>
+                    <div className="text-xs text-[var(--muted)]">HAV: {e.havCategory} · KPI: {formatPercent(getKpiScore(e))}</div>
+                  </div>
+                ))}
+                {branchIntelligence.criticalInterventions.length === 0 && <div className="text-xs text-[var(--muted)]">None found</div>}
+              </div>
+            </div>
+
+            <div>
+              <div className="flex items-center gap-2 text-xs font-bold uppercase text-amber-700 tracking-wider mb-3">
+                <AlertTriangle size={14} /> Attention Required
+              </div>
+              <div className="space-y-2">
+                {branchIntelligence.attentionRequired.slice(0, 3).map(e => (
+                  <div key={e.nrp} className="bg-white/80 rounded-md p-2 text-sm border border-amber-100 shadow-sm">
+                    <div className="font-semibold">{e.name}</div>
+                    <div className="text-xs text-[var(--muted)]">KPI: {formatPercent(getKpiScore(e))}</div>
+                  </div>
+                ))}
+                {branchIntelligence.attentionRequired.length === 0 && <div className="text-xs text-[var(--muted)]">None found</div>}
+              </div>
+            </div>
+
+            <div>
+              <div className="flex items-center gap-2 text-xs font-bold uppercase text-slate-700 tracking-wider mb-3">
+                <Hammer size={14} /> Dev Backlog
+              </div>
+              <div className="space-y-2">
+                {branchIntelligence.devBacklog.slice(0, 3).map(e => (
+                  <div key={e.nrp} className="bg-white/80 rounded-md p-2 text-sm border border-slate-200 shadow-sm">
+                    <div className="font-semibold">{e.name}</div>
+                    <div className="text-xs text-[var(--muted)]">KPI: {formatPercent(getKpiScore(e))}</div>
+                  </div>
+                ))}
+                {branchIntelligence.devBacklog.length === 0 && <div className="text-xs text-[var(--muted)]">None found</div>}
+              </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Row 2: Insight Layer */}
       <div className="grid gap-6 xl:grid-cols-3">

@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { PageHero } from "@/components/shared/page-hero";
 import { usePortalStore } from "@/store/portal-store";
 import { getOrganizationBranches } from "@/lib/organization";
+import { Lightbulb } from "lucide-react";
 
 const pkScoreMap: Record<string, number> = {
   BS: 5,
@@ -91,9 +92,19 @@ export function AreaFoundationView({ areaId }: { areaId: string }) {
         avgHav: average(
           branchEmployees.map((employee) => employee.havScore ?? 0),
         ),
+        unfitCount: branchEmployees.filter((e) => e.havCategory === "Unfit Employee").length,
       };
     });
   }, [areaBranches, areaEmployees]);
+
+  const intelligence = useMemo(() => {
+    const validBranches = branchSummaries.filter(b => b.employeeCount > 0);
+    const lowestKpiBranch = validBranches.length > 0 ? [...validBranches].sort((a,b) => a.avgKpi - b.avgKpi)[0] : null;
+    const highestRiskBranch = validBranches.length > 0 ? [...validBranches].sort((a,b) => (b.unfitCount / b.employeeCount) - (a.unfitCount / a.employeeCount))[0] : null;
+    const bestBranch = validBranches.length > 0 ? [...validBranches].sort((a,b) => b.avgKpi - a.avgKpi)[0] : null;
+    
+    return { lowestKpiBranch, highestRiskBranch, bestBranch };
+  }, [branchSummaries]);
 
   const avgKpi = average(
     areaEmployees.map(
@@ -136,6 +147,34 @@ export function AreaFoundationView({ areaId }: { areaId: string }) {
         <SummaryCard label="Average HAV" value={formatDecimal(avgHav)} />
         <SummaryCard label="Branch Count" value={areaBranches.length} />
       </div>
+
+      <Card className="rounded-[24px] border border-amber-200 bg-amber-50/50 shadow-sm">
+        <CardHeader className="pb-2 border-b border-amber-200/50 px-6 py-4">
+          <CardTitle className="text-base flex items-center gap-2 text-amber-800">
+            <Lightbulb size={18} className="text-amber-600" />
+            Area Intelligence Brief
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="p-6">
+          <div className="grid gap-4 md:grid-cols-3">
+            <div className="space-y-1">
+              <div className="text-xs font-bold uppercase text-amber-700/70 tracking-wider">Lowest KPI Branch</div>
+              <div className="font-semibold text-slate-800">{intelligence.lowestKpiBranch?.branch.branchName ?? "--"}</div>
+              <div className="text-xs text-[var(--muted)]">{formatPercent(intelligence.lowestKpiBranch?.avgKpi ?? null)}</div>
+            </div>
+            <div className="space-y-1">
+              <div className="text-xs font-bold uppercase text-amber-700/70 tracking-wider">Highest Risk Branch</div>
+              <div className="font-semibold text-slate-800">{intelligence.highestRiskBranch?.branch.branchName ?? "--"}</div>
+              <div className="text-xs text-[var(--muted)]">{formatPercent(intelligence.highestRiskBranch ? intelligence.highestRiskBranch.unfitCount / intelligence.highestRiskBranch.employeeCount : null)} Unfit</div>
+            </div>
+            <div className="space-y-1">
+              <div className="text-xs font-bold uppercase text-amber-700/70 tracking-wider">Best Performing Branch</div>
+              <div className="font-semibold text-slate-800">{intelligence.bestBranch?.branch.branchName ?? "--"}</div>
+              <div className="text-xs text-[var(--muted)]">{formatPercent(intelligence.bestBranch?.avgKpi ?? null)}</div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
 
       <div className="grid gap-6 xl:grid-cols-2">
         <SectionCard title="Area Snapshot">

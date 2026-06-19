@@ -8,6 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { getOrganizationByBranchCode } from "@/lib/organization";
 import { formatDateLabel, resolvePhotoUrl } from "@/lib/utils";
 import { usePortalStore } from "@/store/portal-store";
+import { getEmployeeRiskLevel, isCareerStagnant, getEmployeeRecommendation } from "@/lib/intelligence";
 import type { EmployeeRecord, TrainingHistoryRecord, WorkHistoryRecord } from "@/types";
 
 function formatPercent(value: number | null) {
@@ -136,6 +137,45 @@ export function EmployeeProfileFoundationView({ nrp }: { nrp: string }) {
 
         {/* Right Column: Performance & History (70%) */}
         <div className="space-y-6">
+          <Card className="rounded-[30px] border border-amber-200 bg-amber-50/50 shadow-sm overflow-hidden">
+            <CardHeader className="border-b border-amber-200/50 px-6 py-4">
+              <CardTitle className="text-base flex items-center gap-2 text-amber-800">
+                <Sparkles size={18} className="text-amber-600" /> Employee Intelligence Brief
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="p-6">
+              <div className="grid gap-6 md:grid-cols-2 mb-6">
+                <div className="space-y-1">
+                  <div className="text-xs font-bold uppercase text-amber-700/70 tracking-wider">Assessment</div>
+                  <div className="font-semibold text-slate-800">{employee.havCategory || "Unknown"}</div>
+                </div>
+                <div className="space-y-1">
+                  <div className="text-xs font-bold uppercase text-amber-700/70 tracking-wider">Risk Level</div>
+                  <div className="font-semibold text-slate-800 flex items-center gap-2">
+                    {getEmployeeRiskLevel(employee, trainingRecords)}
+                    {getEmployeeRiskLevel(employee, trainingRecords) === "High" && <AlertTriangle size={14} className="text-red-500" />}
+                  </div>
+                </div>
+                <div className="space-y-1">
+                  <div className="text-xs font-bold uppercase text-amber-700/70 tracking-wider">Career Stagnation Indicator</div>
+                  <div className="font-semibold text-slate-800">{isCareerStagnant(employee, trainingRecords) ? "Yes" : "No"}</div>
+                </div>
+                <div className="space-y-1">
+                  <div className="text-xs font-bold uppercase text-amber-700/70 tracking-wider">Supporting Evidence</div>
+                  <div className="font-semibold text-slate-800 text-sm">
+                    KPI: {formatPercent(employee.kpiFullYear ?? employee.kpiMidYear)} · PK: {employee.pk2025 || "--"}
+                  </div>
+                </div>
+              </div>
+              <div className="bg-white/60 p-4 rounded-xl border border-amber-200/50">
+                <div className="text-xs font-bold uppercase text-amber-700/70 tracking-wider mb-2">System Recommendation</div>
+                <div className="font-medium text-amber-900 text-sm leading-relaxed">
+                  {getEmployeeRecommendation(employee, trainingRecords)}
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
           <Card className="rounded-[30px] border-[var(--border)] bg-white shadow-sm overflow-hidden">
             <CardHeader className="border-b border-[var(--border)] bg-slate-50/50 px-6 py-4">
               <CardTitle className="text-base flex items-center gap-2">

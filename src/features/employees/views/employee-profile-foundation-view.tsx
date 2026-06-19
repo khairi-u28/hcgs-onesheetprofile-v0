@@ -1,14 +1,14 @@
 "use client";
 
 import Link from "next/link";
-import { differenceInYears, differenceInMonths, formatDistanceToNowStrict, parseISO } from "date-fns";
-import { Award, BriefcaseBusiness, GraduationCap, MapPin, Sparkles, UserRound, AlertTriangle, CheckCircle2, CircleDashed } from "lucide-react";
+import { differenceInYears, differenceInMonths, parseISO, format } from "date-fns";
+import { Award, BriefcaseBusiness, GraduationCap, MapPin, Sparkles, UserRound, AlertTriangle } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { getOrganizationByBranchCode } from "@/lib/organization";
 import { formatDateLabel, resolvePhotoUrl } from "@/lib/utils";
+import { getMasaKerjaTotal, getMasaKerjaJabatan, getMasaKerjaCabang, calculateTenureFromDate } from "@/lib/utils/tenure";
 import { usePortalStore } from "@/store/portal-store";
-import { getEmployeeRiskLevel, isCareerStagnant, getEmployeeRecommendation } from "@/lib/intelligence";
 import type { EmployeeRecord, TrainingHistoryRecord, WorkHistoryRecord } from "@/types";
 
 function formatPercent(value: number | null) {
@@ -21,6 +21,14 @@ function formatAge(value: string | null) {
   const date = parseISO(value);
   if (!date || Number.isNaN(date.getTime())) return "--";
   return `${differenceInYears(new Date(), date)} years`;
+}
+
+function TrainingStatusBadge({ status }: { status: string }) {
+  if (status === "Failed") return <Badge className="bg-red-500 text-white hover:bg-red-600 border-transparent">Failed</Badge>;
+  if (status === "Promoted") return <Badge className="bg-emerald-500 text-white hover:bg-emerald-600 border-transparent">Promoted</Badge>;
+  if (status === "Pool of Cadre") return <Badge className="bg-indigo-500 text-white hover:bg-indigo-600 border-transparent">Pool of Cadre</Badge>;
+  if (status === "On Going") return <Badge variant="outline" className="border-amber-500 text-amber-600">On Going</Badge>;
+  return <Badge variant="outline">{status}</Badge>;
 }
 
 export function EmployeeProfileFoundationView({ nrp }: { nrp: string }) {
@@ -38,7 +46,6 @@ export function EmployeeProfileFoundationView({ nrp }: { nrp: string }) {
     );
   }
 
-  const organization = getOrganizationByBranchCode(employee.branchCode);
   const allowedTrainingStatuses = ["Failed", "Pool of Cadre", "Promoted", "On Going"];
   const trainingRecords = [...trainingHistory]
     .filter((record) => record.employeeNrp === employee.nrp && record.status && allowedTrainingStatuses.includes(record.status))
@@ -52,17 +59,22 @@ export function EmployeeProfileFoundationView({ nrp }: { nrp: string }) {
     .sort((a, b) => new Date(b.startDate).getTime() - new Date(a.startDate).getTime());
 
   const branch = getOrganizationByBranchCode(employee.branchCode);
-  const regionId = branch?.region ?? "Unknown Region";
-  const areaId = branch?.area ?? "Unknown Area";
+  const regionId = employee.regionDiv || branch?.region || "Unknown Region";
+  const areaId = employee.areaDept || branch?.area || "Unknown Area";
   const branchName = branch?.branchName ?? employee.branchCode;
 
   const photoUrl = resolvePhotoUrl(employee.photoUrl);
-  const totalTenure = formatDistanceToNowStrict(parseISO(employee.entryDate), { addSuffix: false });
+
+  const mkTotal = getMasaKerjaTotal(employee.entryDate, employee.masaKerjaTotal);
+  const mkJabatan = getMasaKerjaJabatan(employee.pos, employee.masaKerjaJabatan, workRecords);
+  const mkCabang = getMasaKerjaCabang(employee.branchCode, employee.masaKerjaCabang, workRecords);
 
   return (
     <div className="space-y-6 pb-10">
       <div className="flex flex-wrap items-center gap-2 text-sm text-[var(--muted)] font-medium">
         <Link href="/" className="hover:text-foreground hover:underline">Home</Link>
+        <span>›</span>
+        <Link href={"/regions" as any} className="hover:text-foreground hover:underline">Regions</Link>
         <span>›</span>
         {regionId !== "Unknown Region" ? (
           <Link href={`/regions/${encodeURIComponent(regionId)}`} className="hover:text-foreground hover:underline">{regionId}</Link>
@@ -82,52 +94,51 @@ export function EmployeeProfileFoundationView({ nrp }: { nrp: string }) {
       </div>
 
       <div className="grid gap-6 lg:grid-cols-[300px_1fr] xl:grid-cols-[350px_1fr] items-start">
-        {/* Left Column: Identity Dossier (30%) */}
+        {/* Left Column: HEADER Dossier */}
         <div className="space-y-6 sticky top-6">
           <Card className="rounded-[30px] border-[var(--border)] overflow-hidden bg-white shadow-sm">
             <div className="bg-gradient-to-b from-slate-100 to-white pt-8 pb-4 flex flex-col items-center">
               <img
-                src={photoUrl || "/placeholder-avatar.jpg"}
+                src={photoUrl || "https://upload.wikimedia.org/wikipedia/commons/8/89/Portrait_Placeholder.png"}
                 alt={employee.name}
                 className="h-32 w-32 rounded-full border-4 border-white object-cover shadow-sm mb-4"
+                onError={(e) => { e.currentTarget.src = "https://upload.wikimedia.org/wikipedia/commons/8/89/Portrait_Placeholder.png" }}
               />
               <h2 className="text-2xl font-black text-center tracking-tight px-4">{employee.name}</h2>
-              <p className="text-[var(--muted)] text-sm mt-1">{employee.nrp}</p>
-              <Badge variant="outline" className="mt-3 bg-white">{employee.position}</Badge>
+              <p className="text-[var(--muted)] text-sm mt-1 font-mono">{employee.nrp}</p>
+              <Badge variant="outline" className="mt-3 bg-white text-center whitespace-normal">{employee.position}</Badge>
             </div>
             <CardContent className="p-6 pt-2">
-              <div className="flex flex-wrap justify-center gap-2 mb-6">
-                {employee.havCategory && (
-                  <Badge className="bg-indigo-50 text-indigo-700 border-indigo-200">HAV: {employee.havCategory}</Badge>
-                )}
-                {employee.pk2025 && (
-                  <Badge className="bg-emerald-50 text-emerald-700 border-emerald-200">PK: {employee.pk2025}</Badge>
-                )}
-                <Badge className="bg-blue-50 text-blue-700 border-blue-200">KPI: {formatPercent(employee.kpiFullYear ?? employee.kpiMidYear)}</Badge>
-              </div>
-
-              <div className="space-y-4 text-sm">
+              <div className="space-y-4 text-sm mt-4">
                 <div className="flex items-center gap-3">
-                  <UserRound size={16} className="text-[var(--muted)]" />
-                  <div className="flex-1">
-                    <div className="text-[10px] uppercase font-bold text-[var(--muted)] tracking-wider">Demographics</div>
-                    <div className="font-medium">{formatAge(employee.dateOfBirth)} ({formatDateLabel(employee.dateOfBirth)})</div>
-                  </div>
-                </div>
-                <div className="flex items-center gap-3">
-                  <BriefcaseBusiness size={16} className="text-[var(--muted)]" />
-                  <div className="flex-1">
-                    <div className="text-[10px] uppercase font-bold text-[var(--muted)] tracking-wider">Employment</div>
-                    <div className="font-medium">{totalTenure} tenure</div>
-                    <div className="text-xs text-[var(--muted)]">Since {formatDateLabel(employee.entryDate)}</div>
-                  </div>
-                </div>
-                <div className="flex items-center gap-3">
-                  <MapPin size={16} className="text-[var(--muted)]" />
+                  <MapPin size={16} className="text-[var(--muted)] shrink-0" />
                   <div className="flex-1">
                     <div className="text-[10px] uppercase font-bold text-[var(--muted)] tracking-wider">Location</div>
-                    <div className="font-medium">{branchName}</div>
-                    <div className="text-xs text-[var(--muted)]">POS: {employee.pos}</div>
+                    <div className="font-medium">{employee.branchCode} - {branchName}</div>
+                    <div className="text-xs text-[var(--muted)]">{regionId} · {areaId}</div>
+                    <div className="text-xs text-[var(--muted)] mt-1">POS: {employee.pos}</div>
+                  </div>
+                </div>
+                
+                <div className="flex items-center gap-3">
+                  <BriefcaseBusiness size={16} className="text-[var(--muted)] shrink-0" />
+                  <div className="flex-1">
+                    <div className="text-[10px] uppercase font-bold text-[var(--muted)] tracking-wider">Employment</div>
+                    <div className="font-medium">Entry: {formatDateLabel(employee.entryDate)}</div>
+                    <div className="grid grid-cols-2 gap-2 mt-2 text-xs">
+                      <div className="bg-slate-50 p-2 rounded border">
+                        <div className="text-[var(--muted)]">Total</div>
+                        <div className="font-mono font-medium">{mkTotal}</div>
+                      </div>
+                      <div className="bg-slate-50 p-2 rounded border">
+                        <div className="text-[var(--muted)]">Jabatan</div>
+                        <div className="font-mono font-medium">{mkJabatan}</div>
+                      </div>
+                      <div className="bg-slate-50 p-2 rounded border col-span-2">
+                        <div className="text-[var(--muted)]">Cabang</div>
+                        <div className="font-mono font-medium">{mkCabang}</div>
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -135,101 +146,131 @@ export function EmployeeProfileFoundationView({ nrp }: { nrp: string }) {
           </Card>
         </div>
 
-        {/* Right Column: Performance & History (70%) */}
+        {/* Right Column: Sections */}
         <div className="space-y-6">
-          <Card className="rounded-[30px] border border-amber-200 bg-amber-50/50 shadow-sm overflow-hidden">
-            <CardHeader className="border-b border-amber-200/50 px-6 py-4">
-              <CardTitle className="text-base flex items-center gap-2 text-amber-800">
-                <Sparkles size={18} className="text-amber-600" /> Employee Intelligence Brief
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="p-6">
-              <div className="grid gap-6 md:grid-cols-2 mb-6">
-                <div className="space-y-1">
-                  <div className="text-xs font-bold uppercase text-amber-700/70 tracking-wider">Assessment</div>
-                  <div className="font-semibold text-slate-800">{employee.havCategory || "Unknown"}</div>
-                </div>
-                <div className="space-y-1">
-                  <div className="text-xs font-bold uppercase text-amber-700/70 tracking-wider">Risk Level</div>
-                  <div className="font-semibold text-slate-800 flex items-center gap-2">
-                    {getEmployeeRiskLevel(employee, trainingRecords)}
-                    {getEmployeeRiskLevel(employee, trainingRecords) === "High" && <AlertTriangle size={14} className="text-red-500" />}
-                  </div>
-                </div>
-                <div className="space-y-1">
-                  <div className="text-xs font-bold uppercase text-amber-700/70 tracking-wider">Career Stagnation Indicator</div>
-                  <div className="font-semibold text-slate-800">{isCareerStagnant(employee, trainingRecords) ? "Yes" : "No"}</div>
-                </div>
-                <div className="space-y-1">
-                  <div className="text-xs font-bold uppercase text-amber-700/70 tracking-wider">Supporting Evidence</div>
-                  <div className="font-semibold text-slate-800 text-sm">
-                    KPI: {formatPercent(employee.kpiFullYear ?? employee.kpiMidYear)} · PK: {employee.pk2025 || "--"}
-                  </div>
-                </div>
-              </div>
-              <div className="bg-white/60 p-4 rounded-xl border border-amber-200/50">
-                <div className="text-xs font-bold uppercase text-amber-700/70 tracking-wider mb-2">System Recommendation</div>
-                <div className="font-medium text-amber-900 text-sm leading-relaxed">
-                  {getEmployeeRecommendation(employee, trainingRecords)}
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="rounded-[30px] border-[var(--border)] bg-white shadow-sm overflow-hidden">
-            <CardHeader className="border-b border-[var(--border)] bg-slate-50/50 px-6 py-4">
-              <CardTitle className="text-base flex items-center gap-2">
-                <Sparkles size={18} className="text-amber-500" /> Performance Radar
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="p-0">
-              <div className="grid grid-cols-3 divide-x divide-[var(--border)]">
-                <div className="p-6 text-center">
-                  <div className="text-xs font-bold uppercase tracking-wider text-[var(--muted)] mb-2">KPI Full Year</div>
-                  <div className="text-3xl font-black text-emerald-600">{formatPercent(employee.kpiFullYear)}</div>
-                  <div className="text-xs text-[var(--muted)] mt-1">Mid Year: {formatPercent(employee.kpiMidYear)}</div>
-                </div>
-                <div className="p-6 text-center">
-                  <div className="text-xs font-bold uppercase tracking-wider text-[var(--muted)] mb-2">PK Evaluation</div>
-                  <div className="text-3xl font-black text-indigo-600">{employee.pk2025 || "--"}</div>
-                  <div className="text-xs text-[var(--muted)] mt-1">2024: {employee.pk2024 || "--"} · 2023: {employee.pk2023 || "--"}</div>
-                </div>
-                <div className="p-6 text-center">
-                  <div className="text-xs font-bold uppercase tracking-wider text-[var(--muted)] mb-2">HAV Score</div>
-                  <div className="text-3xl font-black text-blue-600">{employee.havScore ? employee.havScore.toFixed(1) : "--"}</div>
-                  <div className="text-xs text-[var(--muted)] mt-1">{employee.havRaw || "No raw score"}</div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
+          
+          {/* PERFORMANCE INDEX */}
           <Card className="rounded-[30px] border-[var(--border)] bg-white shadow-sm overflow-hidden">
             <CardHeader className="border-b border-[var(--border)] bg-slate-50/50 px-6 py-4 flex flex-row items-center justify-between">
               <CardTitle className="text-base flex items-center gap-2">
-                <GraduationCap size={18} className="text-indigo-500" /> Development & Training
+                <Sparkles size={18} className="text-amber-500" /> Performance Index
               </CardTitle>
-              <Badge variant="outline">{employee.developmentProgramStatus || "Not in program"}</Badge>
             </CardHeader>
+            <CardContent className="p-0">
+              <div className="grid grid-cols-2 md:grid-cols-4 divide-x divide-y md:divide-y-0 divide-[var(--border)]">
+                <div className="p-6 text-center">
+                  <div className="text-xs font-bold uppercase tracking-wider text-[var(--muted)] mb-2">KPI</div>
+                  <div className="text-3xl font-black text-emerald-600">{formatPercent(employee.kpiFullYear)}</div>
+                  <div className="text-xs text-[var(--muted)] mt-1">Mid: {formatPercent(employee.kpiMidYear)}</div>
+                </div>
+                <div className="p-6 text-center">
+                  <div className="text-xs font-bold uppercase tracking-wider text-[var(--muted)] mb-2">HAV</div>
+                  <div className="text-3xl font-black text-blue-600">{employee.havCategory || "--"}</div>
+                  <div className="text-xs text-[var(--muted)] mt-1">Score: {employee.havScore ? employee.havScore.toFixed(1) : "--"}</div>
+                </div>
+                <div className="p-6 text-center col-span-2 md:col-span-2">
+                  <div className="text-xs font-bold uppercase tracking-wider text-[var(--muted)] mb-2">PK History</div>
+                  <div className="flex justify-center gap-6 mt-3">
+                    <div className="text-center">
+                      <div className="text-lg font-bold">{employee.pk2025 || "--"}</div>
+                      <div className="text-[10px] text-[var(--muted)] uppercase">2025</div>
+                    </div>
+                    <div className="text-center">
+                      <div className="text-lg font-bold">{employee.pk2024 || "--"}</div>
+                      <div className="text-[10px] text-[var(--muted)] uppercase">2024</div>
+                    </div>
+                    <div className="text-center">
+                      <div className="text-lg font-bold">{employee.pk2023 || "--"}</div>
+                      <div className="text-[10px] text-[var(--muted)] uppercase">2023</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* PERSONAL INFORMATION */}
+          <Card className="rounded-[30px] border-[var(--border)] bg-white shadow-sm overflow-hidden">
+            <CardHeader className="border-b border-[var(--border)] bg-slate-50/50 px-6 py-4 flex flex-row items-center justify-between">
+              <CardTitle className="text-base flex items-center gap-2">
+                <UserRound size={18} className="text-indigo-500" /> Personal Information
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="p-6 grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="space-y-4">
+                <div>
+                  <div className="text-xs font-bold uppercase tracking-wider text-[var(--muted)]">Date of Birth & Age</div>
+                  <div className="font-medium mt-1">{formatDateLabel(employee.dateOfBirth)} ({formatAge(employee.dateOfBirth)})</div>
+                </div>
+                <div>
+                  <div className="text-xs font-bold uppercase tracking-wider text-[var(--muted)]">Education</div>
+                  <div className="font-medium mt-1">{employee.educationLevel || "--"}</div>
+                  <div className="text-sm text-[var(--muted)]">{employee.educationInstitution || "--"}</div>
+                </div>
+              </div>
+              <div className="space-y-4">
+                <div>
+                  <div className="text-xs font-bold uppercase tracking-wider text-[var(--muted)]">Strengths</div>
+                  <ul className="list-disc pl-4 mt-1 space-y-1 text-sm font-medium">
+                    <li>{employee.strength1 || "--"}</li>
+                    <li>{employee.strength2 || "--"}</li>
+                  </ul>
+                </div>
+                <div>
+                  <div className="text-xs font-bold uppercase tracking-wider text-[var(--muted)]">Areas of Development</div>
+                  <ul className="list-disc pl-4 mt-1 space-y-1 text-sm font-medium">
+                    <li>{employee.developmentArea1 || "--"}</li>
+                    <li>{employee.developmentArea2 || "--"}</li>
+                  </ul>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* DEV PROGRAM & TRAINING HISTORY */}
+          <Card className="rounded-[30px] border-[var(--border)] bg-white shadow-sm overflow-hidden">
+            <CardHeader className="border-b border-[var(--border)] bg-slate-50/50 px-6 py-4 flex flex-row items-center justify-between">
+              <CardTitle className="text-base flex items-center gap-2">
+                <GraduationCap size={18} className="text-teal-500" /> Dev Program & Training History
+              </CardTitle>
+            </CardHeader>
+            <div className="p-6 bg-slate-50/30 border-b border-[var(--border)] grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div>
+                <div className="text-xs font-bold uppercase tracking-wider text-[var(--muted)]">Last Dev Program</div>
+                <div className="font-medium mt-1">{employee.lastDevelopmentProgram || "--"}</div>
+              </div>
+              <div>
+                <div className="text-xs font-bold uppercase tracking-wider text-[var(--muted)]">Program Status</div>
+                <div className="font-medium mt-1">{employee.developmentProgramStatus || "--"}</div>
+              </div>
+              <div>
+                <div className="text-xs font-bold uppercase tracking-wider text-[var(--muted)]">Program Period</div>
+                <div className="font-medium mt-1">{employee.developmentProgramPeriod || "--"}</div>
+              </div>
+            </div>
             <CardContent className="p-0">
               <div className="overflow-x-auto">
                 <table className="w-full text-left text-sm">
                   <thead className="border-b border-[var(--border)] bg-slate-50/30">
                     <tr>
-                      <th className="px-6 py-3 font-semibold text-[var(--muted)]">Program</th>
-                      <th className="px-6 py-3 font-semibold text-[var(--muted)]">Completion</th>
+                      <th className="px-6 py-3 font-semibold text-[var(--muted)]">Training Name</th>
+                      <th className="px-6 py-3 font-semibold text-[var(--muted)]">Year</th>
                       <th className="px-6 py-3 font-semibold text-[var(--muted)] text-right">Status</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-[var(--border)]">
-                    {trainingRecords.map((record, i) => (
-                      <tr key={i} className="hover:bg-[var(--surface)] transition-colors">
-                        <td className="px-6 py-3 font-medium text-slate-700">{record.trainingName || "--"}</td>
-                        <td className="px-6 py-3 text-[var(--muted)]">{formatDateLabel(record.completionDate)}</td>
-                        <td className="px-6 py-3 text-right">
-                          <TrainingStatusBadge status={record.status!} />
-                        </td>
-                      </tr>
-                    ))}
+                    {trainingRecords.map((record, i) => {
+                      const year = record.completionDate ? format(parseISO(record.completionDate), "yyyy") : "--";
+                      return (
+                        <tr key={i} className="hover:bg-[var(--surface)] transition-colors">
+                          <td className="px-6 py-3 font-medium text-slate-700">{record.trainingName || "--"}</td>
+                          <td className="px-6 py-3 text-[var(--muted)]">{year}</td>
+                          <td className="px-6 py-3 text-right">
+                            <TrainingStatusBadge status={record.status!} />
+                          </td>
+                        </tr>
+                      );
+                    })}
                     {trainingRecords.length === 0 && (
                       <tr>
                         <td colSpan={3} className="p-8 text-center text-[var(--muted)]">No active training records.</td>
@@ -241,63 +282,70 @@ export function EmployeeProfileFoundationView({ nrp }: { nrp: string }) {
             </CardContent>
           </Card>
 
+          {/* WORKING EXPERIENCE HISTORY */}
           <Card className="rounded-[30px] border-[var(--border)] bg-white shadow-sm overflow-hidden">
             <CardHeader className="border-b border-[var(--border)] bg-slate-50/50 px-6 py-4">
               <CardTitle className="text-base flex items-center gap-2">
-                <BriefcaseBusiness size={18} className="text-slate-500" /> Career Trajectory
+                <BriefcaseBusiness size={18} className="text-slate-500" /> Working Experience History
               </CardTitle>
             </CardHeader>
-            <CardContent className="p-6">
-              {workRecords.length > 0 ? (
-                <div className="space-y-6 relative before:absolute before:inset-0 before:ml-5 before:-translate-x-px md:before:mx-auto md:before:translate-x-0 before:h-full before:w-0.5 before:bg-gradient-to-b before:from-transparent before:via-[var(--border)] before:to-transparent">
-                  {workRecords.map((record, i) => {
-                    const start = parseISO(record.startDate);
-                    const end = parseISO(record.endDate);
-                    const duration = (!Number.isNaN(start.getTime()) && !Number.isNaN(end.getTime()))
-                      ? differenceInMonths(end, start)
-                      : null;
-                      
-                    return (
-                      <div key={i} className="relative flex items-center justify-between md:justify-normal md:odd:flex-row-reverse group is-active">
-                        <div className="flex items-center justify-center w-10 h-10 rounded-full border-4 border-white bg-[var(--surface)] text-[var(--muted)] shadow shrink-0 md:order-1 md:group-odd:-translate-x-1/2 md:group-even:translate-x-1/2 z-10">
-                          <Award size={16} />
-                        </div>
-                        <div className="w-[calc(100%-4rem)] md:w-[calc(50%-2.5rem)] bg-[var(--surface)] p-4 rounded-[20px] border border-[var(--border)]">
-                          <div className="flex items-center justify-between mb-1">
-                            <h3 className="font-bold text-slate-800 text-sm">{record.position}</h3>
-                            <span className="text-xs font-semibold text-[var(--muted)]">{formatDateLabel(record.startDate)}</span>
-                          </div>
-                          <div className="text-xs text-[var(--muted)] mb-2">{record.branchName} · {record.branchCode}</div>
-                          {duration !== null && (
-                            <Badge variant="outline" className="text-[10px] bg-white text-slate-500 border-slate-200">
-                              {Math.floor(duration / 12)}y {duration % 12}m
-                            </Badge>
-                          )}
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              ) : (
-                <div className="text-center text-[var(--muted)] py-8">No historical work records imported.</div>
-              )}
+            <CardContent className="p-0">
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-sm">
+                  <thead className="border-b border-[var(--border)] bg-slate-50/30">
+                    <tr>
+                      <th className="px-6 py-3 font-semibold text-[var(--muted)]">Timeline</th>
+                      <th className="px-6 py-3 font-semibold text-[var(--muted)]">Position / POS</th>
+                      <th className="px-6 py-3 font-semibold text-[var(--muted)]">Branch</th>
+                      <th className="px-6 py-3 font-semibold text-[var(--muted)] text-right">Duration</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-[var(--border)]">
+                    {workRecords.map((record, i) => {
+                      const start = formatDateLabel(record.startDate);
+                      const end = record.endDate ? formatDateLabel(record.endDate) : "Present";
+                      let duration = "--";
+                      if (record.startDate && record.endDate) {
+                        const m = differenceInMonths(parseISO(record.endDate), parseISO(record.startDate));
+                        duration = `${Math.floor(m/12).toString().padStart(2, '0')}-${(m%12).toString().padStart(2, '0')}`;
+                      } else if (record.startDate && !record.endDate) {
+                         const calc = calculateTenureFromDate(record.startDate);
+                         if (calc) duration = calc;
+                      }
+
+                      return (
+                        <tr key={i} className="hover:bg-[var(--surface)] transition-colors">
+                          <td className="px-6 py-3">
+                            <div className="font-medium text-slate-700 whitespace-nowrap">{start}</div>
+                            <div className="text-xs text-[var(--muted)] whitespace-nowrap">to {end}</div>
+                          </td>
+                          <td className="px-6 py-3">
+                            <div className="font-medium text-slate-700">{record.position}</div>
+                            <div className="text-xs text-[var(--muted)]">{record.pos}</div>
+                          </td>
+                          <td className="px-6 py-3">
+                            <div className="font-medium text-slate-700">{record.branchCode}</div>
+                            <div className="text-xs text-[var(--muted)] line-clamp-1" title={record.branchName}>{record.branchName}</div>
+                          </td>
+                          <td className="px-6 py-3 text-right">
+                             <Badge variant="outline" className="font-mono bg-white">{duration}</Badge>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                    {workRecords.length === 0 && (
+                      <tr>
+                        <td colSpan={4} className="p-8 text-center text-[var(--muted)]">No work history available.</td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
             </CardContent>
           </Card>
+
         </div>
       </div>
     </div>
   );
-}
-
-function TrainingStatusBadge({ status }: { status: string }) {
-  if (status === "Failed") {
-    return <span className="inline-flex items-center gap-1 text-[11px] font-bold uppercase tracking-wider text-red-600 bg-red-50 px-2 py-0.5 rounded-full border border-red-200"><AlertTriangle size={12}/> {status}</span>;
-  }
-  if (status === "Promoted") {
-    return <span className="inline-flex items-center gap-1 text-[11px] font-bold uppercase tracking-wider text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200"><CheckCircle2 size={12}/> {status}</span>;
-  }
-  if (status === "On Going") {
-    return <span className="inline-flex items-center gap-1 text-[11px] font-bold uppercase tracking-wider text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full border border-blue-200"><CircleDashed size={12}/> {status}</span>;
-  }
-  return <span className="inline-flex items-center gap-1 text-[11px] font-bold uppercase tracking-wider text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-full border border-indigo-200"><Sparkles size={12}/> {status}</span>;
 }

@@ -13,9 +13,19 @@ export const navigationItems: NavigationItem[] = [
     description: "National workforce overview",
   },
   {
-    href: "/regions/skeleton" as Route,
+    href: "/regions" as Route,
     label: "Regions",
-    description: "Region, area, and branch drilldown",
+    description: "Directory of all regions",
+  },
+  {
+    href: "/areas" as Route,
+    label: "Areas",
+    description: "Directory of all areas",
+  },
+  {
+    href: "/branches" as Route,
+    label: "Branches",
+    description: "Directory of all branches",
   },
   {
     href: "/employees",

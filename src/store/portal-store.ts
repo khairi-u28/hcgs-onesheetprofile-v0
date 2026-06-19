@@ -36,6 +36,7 @@ type PortalStoreState = {
   setDirectoryFilters: (filters: Partial<EmployeeDirectoryFilters>) => void;
   resetDirectoryFilters: () => void;
   clearImportedData: () => void;
+  resetAllData: () => void;
 };
 
 const initialFilters: EmployeeDirectoryFilters = {
@@ -48,6 +49,14 @@ const initialFilters: EmployeeDirectoryFilters = {
   developmentProgramStatus: null,
 };
 
+const STORAGE_KEY = "hcgs-workforce-portal";
+
+const initialDataset: ActiveDatasetState = {
+  employeeImport: null,
+  trainingImport: null,
+  workHistoryImport: null,
+};
+
 export const usePortalStore = create<PortalStoreState>()(
   persist(
     (set) => ({
@@ -56,10 +65,7 @@ export const usePortalStore = create<PortalStoreState>()(
       employees: [],
       trainingHistory: [],
       workHistory: [],
-      dataset: {
-        employeeImport: null,
-        trainingImport: null,
-      },
+      dataset: initialDataset,
       directoryFilters: initialFilters,
       replaceEmployees: (employees, meta) =>
         set({
@@ -69,13 +75,14 @@ export const usePortalStore = create<PortalStoreState>()(
           dataset: {
             employeeImport: meta,
             trainingImport: null,
+            workHistoryImport: null,
           },
         }),
       replaceTrainingHistory: (trainingHistory, meta) =>
         set((state) => ({
           trainingHistory,
           dataset: {
-            employeeImport: state.dataset.employeeImport,
+            ...state.dataset,
             trainingImport: meta,
           },
         })),
@@ -83,8 +90,8 @@ export const usePortalStore = create<PortalStoreState>()(
         set((state) => ({
           workHistory,
           dataset: {
-            employeeImport: state.dataset.employeeImport,
-            trainingImport: meta,
+            ...state.dataset,
+            workHistoryImport: meta,
           },
         })),
       setDirectoryFilters: (filters) =>
@@ -99,14 +106,24 @@ export const usePortalStore = create<PortalStoreState>()(
         set({
           employees: [],
           trainingHistory: [],
-          dataset: {
-            employeeImport: null,
-            trainingImport: null,
-          },
+          workHistory: [],
+          dataset: initialDataset,
         }),
+      resetAllData: () => {
+        if (typeof window !== "undefined") {
+          localStorage.removeItem(STORAGE_KEY);
+        }
+        set({
+          employees: [],
+          trainingHistory: [],
+          workHistory: [],
+          dataset: initialDataset,
+          directoryFilters: initialFilters,
+        });
+      },
     }),
     {
-      name: "hcgs-workforce-portal",
+      name: STORAGE_KEY,
       storage: createJSONStorage(() => localStorage),
       partialize: (state) => ({
         employees: state.employees,

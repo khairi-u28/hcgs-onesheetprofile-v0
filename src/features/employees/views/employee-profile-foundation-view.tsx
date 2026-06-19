@@ -324,8 +324,15 @@ export function EmployeeProfileFoundationView({ nrp }: { nrp: string }) {
                             <div className="text-xs text-[var(--muted)]">{record.pos}</div>
                           </td>
                           <td className="px-6 py-3">
-                            <div className="font-medium text-slate-700">{record.branchCode}</div>
-                            <div className="text-xs text-[var(--muted)] line-clamp-1" title={record.branchName}>{record.branchName}</div>
+                            {record.branchCode || record.branchName ? (
+                              <div className="font-medium text-slate-700">
+                                {record.branchCode && record.branchName
+                                  ? `${record.branchCode} · ${record.branchName}`
+                                  : record.branchCode || record.branchName}
+                              </div>
+                            ) : (
+                              <div className="text-sm text-[var(--muted)]">Unknown Branch</div>
+                            )}
                           </td>
                           <td className="px-6 py-3 text-right">
                              <Badge variant="outline" className="font-mono bg-white">{duration}</Badge>

@@ -1,6 +1,6 @@
 "use client";
 
-import { Database, FileSpreadsheet, GraduationCap } from "lucide-react";
+import { Briefcase, Database, FileSpreadsheet, GraduationCap } from "lucide-react";
 import { summarizeDataset } from "@/lib/analytics/overview";
 import { formatRelativeTime } from "@/lib/utils";
 import { usePortalStore } from "@/store/portal-store";
@@ -8,11 +8,12 @@ import { usePortalStore } from "@/store/portal-store";
 export function DatasetStatus() {
   const employees = usePortalStore((state) => state.employees);
   const trainingHistory = usePortalStore((state) => state.trainingHistory);
+  const workHistory = usePortalStore((state) => state.workHistory);
   const dataset = usePortalStore((state) => state.dataset);
   const summary = summarizeDataset(employees, trainingHistory);
 
   return (
-    <div className="grid gap-3 sm:grid-cols-3">
+    <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
       <StatusChip
         icon={Database}
         label="Employee records"
@@ -24,10 +25,18 @@ export function DatasetStatus() {
         value={summary.trainingCount.toLocaleString()}
       />
       <StatusChip
+        icon={Briefcase}
+        label="Work history records"
+        value={workHistory.length.toLocaleString()}
+      />
+      <StatusChip
         icon={FileSpreadsheet}
         label="Last replacement"
         value={formatRelativeTime(
-          dataset.trainingImport?.importedAt ?? dataset.employeeImport?.importedAt ?? null,
+          dataset.workHistoryImport?.importedAt ??
+            dataset.trainingImport?.importedAt ??
+            dataset.employeeImport?.importedAt ??
+            null,
         )}
       />
     </div>

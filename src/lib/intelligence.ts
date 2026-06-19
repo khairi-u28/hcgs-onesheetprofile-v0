@@ -1,11 +1,12 @@
-import type { EmployeeRecord, TrainingHistoryRecord } from "@/types";
+import { differenceInMonths, parseISO } from "date-fns";
+import type { EmployeeRecord, TrainingHistoryRecord, WorkHistoryRecord } from "@/types";
 
 export function getKpiScore(employee: EmployeeRecord): number {
   return employee.kpiFullYear ?? employee.kpiMidYear ?? 0;
 }
 
 export function isPromotionCandidate(employee: EmployeeRecord): boolean {
-  const pkTopTier = ["BS", "B+"].includes(employee.pk2025 ?? "");
+  const pkTopTier = ["BS", "B+", "B"].includes(employee.pk2025 ?? "");
   return employee.havCategory === "Strong Performer" && getKpiScore(employee) >= 0.90 && pkTopTier;
 }
 
@@ -37,10 +38,44 @@ export function getMasaKerjaYears(masaKerja: string | undefined | null): number 
 
 export function isCareerStagnant(
   employee: EmployeeRecord,
-  trainingRecords: TrainingHistoryRecord[]
+  trainingRecords: TrainingHistoryRecord[],
+  workHistory?: WorkHistoryRecord[]
 ): boolean {
   if (employee.havCategory !== "Strong Performer") return false;
-  if (getMasaKerjaYears(employee.masaKerjaJabatan) < 4) return false;
+  
+  let tenureYears = 0;
+
+  // 1. masaKerjaJabatan (format "yy-mm")
+  if (employee.masaKerjaJabatan) {
+    tenureYears = getMasaKerjaYears(employee.masaKerjaJabatan);
+  }
+
+  // 2. latest continuous work-history position tenure
+  if (tenureYears === 0 && workHistory && workHistory.length > 0) {
+    const matchingRecords = workHistory.filter(
+      (w) => w.nrp === employee.nrp && w.position === employee.position
+    );
+    if (matchingRecords.length > 0) {
+      const latest = matchingRecords.sort(
+        (a, b) => new Date(b.startDate).getTime() - new Date(a.startDate).getTime()
+      )[0];
+      if (latest.startDate) {
+        const date = parseISO(latest.startDate);
+        const diff = differenceInMonths(new Date(), date);
+        tenureYears = Math.floor(Math.max(0, diff) / 12);
+      }
+    }
+  }
+
+  // 3. entryDate tenure
+  if (tenureYears === 0 && employee.entryDate) {
+    const date = parseISO(employee.entryDate);
+    const diff = differenceInMonths(new Date(), date);
+    tenureYears = Math.floor(Math.max(0, diff) / 12);
+  }
+
+  if (tenureYears < 4) return false;
+
   const hasPromoted = trainingRecords.some(
     (t) => t.employeeNrp === employee.nrp && t.status === "Promoted"
   );
@@ -54,7 +89,6 @@ export function getEmployeeRiskLevel(
   if (isCriticalIntervention(employee)) return "High";
   if (isAttentionRequired(employee, trainingRecords)) return "Medium";
   if (employee.havCategory === "Potential Candidate" || employee.havCategory === "Career Person") {
-    // If not critical or attention but in these middle tiers, let's look at KPI
     if (getKpiScore(employee) < 0.8) return "Medium";
   }
   return "Low";
@@ -62,12 +96,13 @@ export function getEmployeeRiskLevel(
 
 export function getEmployeeRecommendation(
   employee: EmployeeRecord,
-  trainingRecords: TrainingHistoryRecord[]
+  trainingRecords: TrainingHistoryRecord[],
+  workHistory?: WorkHistoryRecord[]
 ): string {
   if (isPromotionCandidate(employee)) {
     return "Prioritize for immediate succession planning and leadership placement.";
   }
-  if (isCareerStagnant(employee, trainingRecords)) {
+  if (isCareerStagnant(employee, trainingRecords, workHistory)) {
     return "Enroll in advanced development program to break stagnation. Assign stretch projects.";
   }
   if (isCriticalIntervention(employee)) {

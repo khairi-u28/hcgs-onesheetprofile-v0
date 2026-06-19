@@ -19,4 +19,5 @@ export type ParsedDatasetResult<T> = {
 export type ActiveDatasetState = {
   employeeImport: DatasetImportMeta | null;
   trainingImport: DatasetImportMeta | null;
+  workHistoryImport: DatasetImportMeta | null;
 };

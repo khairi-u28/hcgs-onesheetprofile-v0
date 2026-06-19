@@ -106,7 +106,24 @@ export function validateEmployeeCsvRow(
     throw new Error(`Unknown Branch Code: ${parsed["Branch Code"]}`);
   }
 
-  const hav = parseHav(parsed.HAV);
+  let hav = {
+    havCategory: parsed.HAV || "",
+    havScore: null as number | null,
+    havRaw: parsed.HAV || "",
+  };
+
+  try {
+    if (parsed.HAV) {
+      hav = parseHav(parsed.HAV);
+    }
+  } catch (error) {
+    // Tolerate malformed HAV values and proceed with defaults
+  }
+
+  // If original row contains a custom havRaw value, preserve it
+  if (row["havRaw"]) {
+    hav.havRaw = row["havRaw"];
+  }
 
   const employee: EmployeeRecord = {
     nrp: parsed.NRP,

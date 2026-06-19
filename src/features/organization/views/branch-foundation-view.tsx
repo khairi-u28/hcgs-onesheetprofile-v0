@@ -101,12 +101,14 @@ export function BranchFoundationView({
   );
 
   const avgKpi = average(
-    branchEmployees.map(
-      (employee) => employee.kpiFullYear ?? employee.kpiMidYear ?? 0,
-    ),
+    branchEmployees
+      .map((employee) => employee.kpiFullYear ?? employee.kpiMidYear)
+      .filter((kpi): kpi is number => kpi !== null && kpi !== undefined)
   );
   const avgHav = average(
-    branchEmployees.map((employee) => employee.havScore ?? 0),
+    branchEmployees
+      .map((employee) => employee.havScore)
+      .filter((hav): hav is number => hav !== null && hav !== undefined)
   );
   
   const devParticipants = branchEmployees.filter(

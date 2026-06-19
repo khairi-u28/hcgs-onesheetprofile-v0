@@ -85,12 +85,14 @@ export function AreaFoundationView({ areaId }: { areaId: string }) {
         branch,
         employeeCount: branchEmployees.length,
         avgKpi: average(
-          branchEmployees.map(
-            (employee) => employee.kpiFullYear ?? employee.kpiMidYear ?? 0,
-          ),
+          branchEmployees
+            .map((employee) => employee.kpiFullYear ?? employee.kpiMidYear)
+            .filter((kpi): kpi is number => kpi !== null && kpi !== undefined)
         ),
         avgHav: average(
-          branchEmployees.map((employee) => employee.havScore ?? 0),
+          branchEmployees
+            .map((employee) => employee.havScore)
+            .filter((hav): hav is number => hav !== null && hav !== undefined)
         ),
         unfitCount: branchEmployees.filter((e) => e.havCategory === "Unfit Employee").length,
       };
@@ -107,12 +109,14 @@ export function AreaFoundationView({ areaId }: { areaId: string }) {
   }, [branchSummaries]);
 
   const avgKpi = average(
-    areaEmployees.map(
-      (employee) => employee.kpiFullYear ?? employee.kpiMidYear ?? 0,
-    ),
+    areaEmployees
+      .map((employee) => employee.kpiFullYear ?? employee.kpiMidYear)
+      .filter((kpi): kpi is number => kpi !== null && kpi !== undefined)
   );
   const avgHav = average(
-    areaEmployees.map((employee) => employee.havScore ?? 0),
+    areaEmployees
+      .map((employee) => employee.havScore)
+      .filter((hav): hav is number => hav !== null && hav !== undefined)
   );
   const havMix = getStaticDistribution(
     areaEmployees.map((employee) => employee.havCategory),

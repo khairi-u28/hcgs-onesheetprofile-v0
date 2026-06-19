@@ -1,14 +1,20 @@
 "use client";
 
-import { startTransition, useId, useState } from "react";
+import Link from "next/link";
+import { startTransition, useCallback, useId, useMemo, useState } from "react";
 import {
   AlertTriangle,
+  ArrowRight,
   CheckCircle2,
   FileSpreadsheet,
+  GraduationCap,
+  History,
+  LayoutDashboard,
   RefreshCcw,
+  RotateCcw,
   Upload,
+  Users,
 } from "lucide-react";
-import { PageHero } from "@/components/shared/page-hero";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -32,6 +38,8 @@ import type {
   TrainingHistoryRecord,
 } from "@/types";
 
+/* ────────────────────────── Types ──────────────────────────────────── */
+
 type ImportKind = "employees" | "training" | "work_history";
 
 type ValidationSummary = {
@@ -53,16 +61,41 @@ type ImportCandidate<T> = {
   summary: ValidationSummary;
 };
 
-type ImportSuccessState = {
-  kind: ImportKind;
-  meta: DatasetImportMeta;
-  validRecords: number;
-  invalidRecords: number;
+type WizardStep = 1 | 2 | 3 | 4 | 5;
+
+const STEP_META: Record<
+  WizardStep,
+  { label: string; description: string }
+> = {
+  1: {
+    label: "Employee Dataset",
+    description: "Upload and validate your employee master data",
+  },
+  2: {
+    label: "Training History",
+    description: "Upload training records linked to employees",
+  },
+  3: {
+    label: "Work History",
+    description: "Upload career movement records",
+  },
+  4: {
+    label: "Review Summary",
+    description: "Confirm all datasets before proceeding",
+  },
+  5: {
+    label: "Start Exploring",
+    description: "Your data is ready — dive in",
+  },
 };
+
+/* ──────────────────── Root Wizard Component ─────────────────────────── */
 
 export function ImportCenterFoundationView() {
   const organization = usePortalStore((state) => state.organization);
   const employees = usePortalStore((state) => state.employees);
+  const trainingHistory = usePortalStore((state) => state.trainingHistory);
+  const workHistory = usePortalStore((state) => state.workHistory);
   const dataset = usePortalStore((state) => state.dataset);
   const replaceEmployees = usePortalStore((state) => state.replaceEmployees);
   const replaceTrainingHistory = usePortalStore(
@@ -71,334 +104,460 @@ export function ImportCenterFoundationView() {
   const replaceWorkHistory = usePortalStore(
     (state) => state.replaceWorkHistory,
   );
+  const resetAllData = usePortalStore((state) => state.resetAllData);
 
+  /* ── Wizard state ── */
+  const resolvedStep = useMemo((): WizardStep => {
+    if (employees.length === 0) return 1;
+    if (!dataset.trainingImport) return 2;
+    if (!dataset.workHistoryImport) return 3;
+    return 4;
+  }, [employees.length, dataset.trainingImport, dataset.workHistoryImport]);
+
+  const [currentStep, setCurrentStep] = useState<WizardStep>(resolvedStep);
+  const [showResetDialog, setShowResetDialog] = useState(false);
+
+  // Allow the wizard to stay on a completed step to see results,
+  // but never let it go ahead of resolvedStep (unless step 4→5 CTA)
+  const activeStep = currentStep <= resolvedStep || currentStep === 5
+    ? currentStep
+    : resolvedStep;
+
+  /* ── CSV local state ── */
   const [employeeCandidate, setEmployeeCandidate] =
     useState<ImportCandidate<EmployeeRecord> | null>(null);
-  const [workHistoryCandidate, setWorkHistoryCandidate] =
-    useState<ImportCandidate<WorkHistoryRecord> | null>(null);
   const [trainingCandidate, setTrainingCandidate] =
     useState<ImportCandidate<TrainingHistoryRecord> | null>(null);
+  const [workHistoryCandidate, setWorkHistoryCandidate] =
+    useState<ImportCandidate<WorkHistoryRecord> | null>(null);
+
   const [employeeError, setEmployeeError] = useState<string | null>(null);
-  const [workHistoryError, setWorkHistoryError] = useState<string | null>(null);
   const [trainingError, setTrainingError] = useState<string | null>(null);
+  const [workHistoryError, setWorkHistoryError] = useState<string | null>(null);
+
+  const [isParsingEmployee, setIsParsingEmployee] = useState(false);
+  const [isParsingTraining, setIsParsingTraining] = useState(false);
+  const [isParsingWorkHistory, setIsParsingWorkHistory] = useState(false);
+
   const [employeeReplacementConfirmed, setEmployeeReplacementConfirmed] =
     useState(false);
-  const [lastSuccess, setLastSuccess] = useState<ImportSuccessState | null>(null);
-  const [isParsingEmployee, setIsParsingEmployee] = useState(false);
-  const [isParsingWorkHistory, setIsParsingWorkHistory] = useState(false);
-  const [isParsingTraining, setIsParsingTraining] = useState(false);
 
   const employeeInputId = useId();
   const trainingInputId = useId();
   const workHistoryInputId = useId();
 
-  const employeeImportMeta = dataset.employeeImport;
-  const trainingImportMeta = dataset.trainingImport;
-  const branchCodeSet = new Set(
-    organization.map((branch) => branch.branchCode.toUpperCase()),
+  const branchCodeSet = useMemo(
+    () =>
+      new Set(organization.map((branch) => branch.branchCode.toUpperCase())),
+    [organization],
   );
-  const employeeNrpSet = new Set(employees.map((employee) => employee.nrp));
-  const employeeCanImport = employeeCandidate
-    ? employeeCandidate.summary.invalidRecords === 0 &&
-      (employees.length === 0 || employeeReplacementConfirmed)
-    : false;
-  const trainingCanImport = trainingCandidate
-    ? employees.length > 0 && trainingCandidate.summary.invalidRecords === 0
-    : false;
+  const employeeNrpSet = useMemo(
+    () => new Set(employees.map((e) => e.nrp)),
+    [employees],
+  );
 
-  async function handleEmployeeFileSelection(
-    event: React.ChangeEvent<HTMLInputElement>,
-  ) {
-    const file = event.target.files?.[0];
-    if (!file) {
-      return;
-    }
+  /* ── File handlers ── */
+  const handleEmployeeFile = useCallback(
+    async (event: React.ChangeEvent<HTMLInputElement>) => {
+      const file = event.target.files?.[0];
+      if (!file) return;
+      setEmployeeError(null);
+      setEmployeeCandidate(null);
+      setEmployeeReplacementConfirmed(false);
+      setIsParsingEmployee(true);
+      try {
+        const csvText = await file.text();
+        startTransition(() => {
+          try {
+            const rawRows = parseCsvRows(csvText);
+            const parsed = parseEmployeeDataset(csvText, branchCodeSet);
+            setEmployeeCandidate({
+              fileName: file.name,
+              parsedData: parsed.data,
+              rawRows,
+              issues: parsed.issues,
+              summary: buildValidationSummary(rawRows.length, parsed.issues),
+            });
+          } catch (error) {
+            setEmployeeError(
+              error instanceof Error
+                ? error.message
+                : "Employee CSV could not be parsed.",
+            );
+          } finally {
+            setIsParsingEmployee(false);
+          }
+        });
+      } catch (error) {
+        setEmployeeError(
+          error instanceof Error
+            ? error.message
+            : "Employee CSV could not be read.",
+        );
+        setIsParsingEmployee(false);
+      } finally {
+        event.target.value = "";
+      }
+    },
+    [branchCodeSet],
+  );
 
-    setEmployeeError(null);
-    setEmployeeCandidate(null);
-    setEmployeeReplacementConfirmed(false);
-    setLastSuccess(null);
-    setIsParsingEmployee(true);
+  const handleTrainingFile = useCallback(
+    async (event: React.ChangeEvent<HTMLInputElement>) => {
+      const file = event.target.files?.[0];
+      if (!file) return;
+      setTrainingError(null);
+      setTrainingCandidate(null);
+      setIsParsingTraining(true);
+      try {
+        const csvText = await file.text();
+        startTransition(() => {
+          try {
+            const rawRows = parseCsvRows(csvText);
+            const parsed = parseTrainingDataset(csvText, employeeNrpSet);
+            setTrainingCandidate({
+              fileName: file.name,
+              parsedData: parsed.data,
+              rawRows,
+              issues: parsed.issues,
+              summary: buildValidationSummary(rawRows.length, parsed.issues),
+            });
+          } catch (error) {
+            setTrainingError(
+              error instanceof Error
+                ? error.message
+                : "Training CSV could not be parsed.",
+            );
+          } finally {
+            setIsParsingTraining(false);
+          }
+        });
+      } catch (error) {
+        setTrainingError(
+          error instanceof Error
+            ? error.message
+            : "Training CSV could not be read.",
+        );
+        setIsParsingTraining(false);
+      } finally {
+        event.target.value = "";
+      }
+    },
+    [employeeNrpSet],
+  );
 
-    try {
-      const csvText = await file.text();
-      startTransition(() => {
-        try {
-          const rawRows = parseCsvRows(csvText);
-          const parsed = parseEmployeeDataset(csvText, branchCodeSet);
-          setEmployeeCandidate({
-            fileName: file.name,
-            parsedData: parsed.data,
-            rawRows,
-            issues: parsed.issues,
-            summary: buildValidationSummary(rawRows.length, parsed.issues),
-          });
-        } catch (error) {
-          setEmployeeError(
-            error instanceof Error
-              ? error.message
-              : "Employee CSV could not be parsed.",
-          );
-        } finally {
-          setIsParsingEmployee(false);
-        }
-      });
-    } catch (error) {
-      setEmployeeError(
-        error instanceof Error ? error.message : "Employee CSV could not be read.",
-      );
-      setIsParsingEmployee(false);
-    } finally {
-      event.target.value = "";
-    }
-  }
+  const handleWorkHistoryFile = useCallback(
+    async (event: React.ChangeEvent<HTMLInputElement>) => {
+      const file = event.target.files?.[0];
+      if (!file) return;
+      setWorkHistoryError(null);
+      setWorkHistoryCandidate(null);
+      setIsParsingWorkHistory(true);
+      try {
+        const csvText = await file.text();
+        startTransition(() => {
+          try {
+            const rawRows = parseCsvRows(csvText);
+            const parsed = parseWorkHistoryDataset(csvText, employeeNrpSet);
+            setWorkHistoryCandidate({
+              fileName: file.name,
+              parsedData: parsed.data,
+              rawRows,
+              issues: parsed.issues,
+              summary: buildValidationSummary(rawRows.length, parsed.issues),
+            });
+          } catch (error) {
+            setWorkHistoryError(
+              error instanceof Error
+                ? error.message
+                : "Work History CSV could not be parsed.",
+            );
+          } finally {
+            setIsParsingWorkHistory(false);
+          }
+        });
+      } catch (error) {
+        setWorkHistoryError(
+          error instanceof Error
+            ? error.message
+            : "Work History CSV could not be read.",
+        );
+        setIsParsingWorkHistory(false);
+      } finally {
+        event.target.value = "";
+      }
+    },
+    [employeeNrpSet],
+  );
 
-  async function handleWorkHistoryFileSelection(
-    event: React.ChangeEvent<HTMLInputElement>,
-  ) {
-    const file = event.target.files?.[0];
-    if (!file) {
-      return;
-    }
-
-    setWorkHistoryError(null);
-    setWorkHistoryCandidate(null);
-    setLastSuccess(null);
-    setIsParsingWorkHistory(true);
-
-    try {
-      const csvText = await file.text();
-      startTransition(() => {
-        try {
-          const rawRows = parseCsvRows(csvText);
-          const parsed = parseWorkHistoryDataset(csvText, employeeNrpSet);
-          setWorkHistoryCandidate({
-            fileName: file.name,
-            parsedData: parsed.data,
-            rawRows,
-            issues: parsed.issues,
-            summary: buildValidationSummary(rawRows.length, parsed.issues),
-          });
-        } catch (error) {
-          setWorkHistoryError(
-            error instanceof Error ? error.message : "Work History CSV could not be parsed.",
-          );
-        } finally {
-          setIsParsingWorkHistory(false);
-        }
-      });
-    } catch (error) {
-      setWorkHistoryError(
-        error instanceof Error ? error.message : "Work History CSV could not be read.",
-      );
-      setIsParsingWorkHistory(false);
-    } finally {
-      event.target.value = "";
-    }
-  }
-  async function handleTrainingFileSelection(
-    event: React.ChangeEvent<HTMLInputElement>,
-  ) {
-    const file = event.target.files?.[0];
-    if (!file) {
-      return;
-    }
-
-    setTrainingError(null);
-    setTrainingCandidate(null);
-    setLastSuccess(null);
-    setIsParsingTraining(true);
-
-    try {
-      const csvText = await file.text();
-      startTransition(() => {
-        try {
-          const rawRows = parseCsvRows(csvText);
-          const parsed = parseTrainingDataset(csvText, employeeNrpSet);
-          setTrainingCandidate({
-            fileName: file.name,
-            parsedData: parsed.data,
-            rawRows,
-            issues: parsed.issues,
-            summary: buildValidationSummary(rawRows.length, parsed.issues),
-          });
-        } catch (error) {
-          setTrainingError(
-            error instanceof Error
-              ? error.message
-              : "Training CSV could not be parsed.",
-          );
-        } finally {
-          setIsParsingTraining(false);
-        }
-      });
-    } catch (error) {
-      setTrainingError(
-        error instanceof Error ? error.message : "Training CSV could not be read.",
-      );
-      setIsParsingTraining(false);
-    } finally {
-      event.target.value = "";
-    }
-  }
-
+  /* ── Import handlers ── */
   function importEmployees() {
-    if (!employeeCandidate) {
+    if (
+      !employeeCandidate ||
+      employeeCandidate.summary.invalidRecords > 0
+    )
       return;
-    }
-
-    if (employeeCandidate.summary.invalidRecords > 0) {
-      return;
-    }
-
-    if (employees.length > 0 && !employeeReplacementConfirmed) {
-      return;
-    }
+    if (employees.length > 0 && !employeeReplacementConfirmed) return;
 
     const meta: DatasetImportMeta = {
       importedAt: new Date().toISOString(),
       fileName: employeeCandidate.fileName,
       recordCount: employeeCandidate.parsedData.length,
     };
-
     replaceEmployees(employeeCandidate.parsedData, meta);
-    setLastSuccess({
-      kind: "employees",
-      meta,
-      validRecords: employeeCandidate.summary.validRecords,
-      invalidRecords: employeeCandidate.summary.invalidRecords,
-    });
     setEmployeeCandidate(null);
     setEmployeeReplacementConfirmed(false);
+    setCurrentStep(2);
   }
 
-  function importWorkHistory() {
-    if (!workHistoryCandidate) {
+  function importTraining() {
+    if (
+      !trainingCandidate ||
+      trainingCandidate.summary.invalidRecords > 0 ||
+      employees.length === 0
+    )
       return;
-    }
-    if (workHistoryCandidate.summary.invalidRecords > 0) {
-      return;
-    }
-    const meta: DatasetImportMeta = {
-      importedAt: new Date().toISOString(),
-      fileName: workHistoryCandidate.fileName,
-      recordCount: workHistoryCandidate.parsedData.length,
-    };
-    replaceWorkHistory(workHistoryCandidate.parsedData, meta);
-    setLastSuccess({
-      kind: "training",
-      meta,
-      validRecords: workHistoryCandidate.summary.validRecords,
-      invalidRecords: workHistoryCandidate.summary.invalidRecords,
-    });
-    setWorkHistoryCandidate(null);
-  }
-  function importTrainingHistory() {
-    if (!trainingCandidate || trainingCandidate.summary.invalidRecords > 0) {
-      return;
-    }
 
     const meta: DatasetImportMeta = {
       importedAt: new Date().toISOString(),
       fileName: trainingCandidate.fileName,
       recordCount: trainingCandidate.parsedData.length,
     };
-
     replaceTrainingHistory(trainingCandidate.parsedData, meta);
-    setLastSuccess({
-      kind: "training",
-      meta,
-      validRecords: trainingCandidate.summary.validRecords,
-      invalidRecords: trainingCandidate.summary.invalidRecords,
-    });
     setTrainingCandidate(null);
+    setCurrentStep(3);
   }
+
+  function importWorkHistory() {
+    if (
+      !workHistoryCandidate ||
+      workHistoryCandidate.summary.invalidRecords > 0 ||
+      employees.length === 0
+    )
+      return;
+
+    const meta: DatasetImportMeta = {
+      importedAt: new Date().toISOString(),
+      fileName: workHistoryCandidate.fileName,
+      recordCount: workHistoryCandidate.parsedData.length,
+    };
+    replaceWorkHistory(workHistoryCandidate.parsedData, meta);
+    setWorkHistoryCandidate(null);
+    setCurrentStep(4);
+  }
+
+  function handleReset() {
+    resetAllData();
+    setEmployeeCandidate(null);
+    setTrainingCandidate(null);
+    setWorkHistoryCandidate(null);
+    setEmployeeError(null);
+    setTrainingError(null);
+    setWorkHistoryError(null);
+    setShowResetDialog(false);
+    setCurrentStep(1);
+  }
+
+  /* ── Derived flags ── */
+  const employeeCanImport = employeeCandidate
+    ? employeeCandidate.summary.invalidRecords === 0 &&
+      (employees.length === 0 || employeeReplacementConfirmed)
+    : false;
+
+  const trainingCanImport =
+    !!trainingCandidate &&
+    employees.length > 0 &&
+    trainingCandidate.summary.invalidRecords === 0;
+
+  const workHistoryCanImport =
+    !!workHistoryCandidate &&
+    employees.length > 0 &&
+    workHistoryCandidate.summary.invalidRecords === 0;
+
+  /* ── Step completion status ── */
+  const stepCompleted: Record<WizardStep, boolean> = {
+    1: employees.length > 0,
+    2: !!dataset.trainingImport,
+    3: !!dataset.workHistoryImport,
+    4: employees.length > 0 && !!dataset.trainingImport && !!dataset.workHistoryImport,
+    5: false,
+  };
 
   return (
     <div className="space-y-6">
-      <PageHero
-        eyebrow="Import Center"
-        title="Upload, validate, preview, and replace datasets"
-        description="This flow keeps imports intentionally simple: full dataset replacement, validation-first review, preview, confirmation, and persistence into the active local dataset."
-      />
+      {/* ── Stepper header ─────────────────────────────── */}
+      <div className="rounded-[28px] bg-[var(--surface)] p-6">
+        <div className="flex items-center justify-between gap-2">
+          <div>
+            <Badge>Import Wizard</Badge>
+            <h1 className="mt-3 text-2xl font-semibold tracking-[-0.04em] sm:text-3xl">
+              Setup your workspace
+            </h1>
+          </div>
+          {employees.length > 0 && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setShowResetDialog(true)}
+              className="gap-2 text-red-600 hover:bg-red-50 hover:text-red-700"
+            >
+              <RotateCcw className="h-3.5 w-3.5" />
+              Reset All Data
+            </Button>
+          )}
+        </div>
 
-      <div className="grid gap-5 xl:grid-cols-[1.15fr_0.85fr]">
-        <CurrentDatasetCard
-          employeeCount={employees.length}
-          trainingCount={usePortalStore.getState().trainingHistory.length}
-          employeeImportMeta={employeeImportMeta}
-          trainingImportMeta={trainingImportMeta}
-        />
-        <ImportSuccessCard success={lastSuccess} />
+        {/* Step indicators */}
+        <div className="mt-6 flex items-center gap-2">
+          {([1, 2, 3, 4, 5] as WizardStep[]).map((step, idx) => (
+            <div key={step} className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => {
+                  if (step <= resolvedStep || (step === 5 && stepCompleted[4])) {
+                    setCurrentStep(step);
+                  }
+                }}
+                disabled={step > resolvedStep && !(step === 5 && stepCompleted[4])}
+                className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-sm font-semibold transition-all duration-200 ${
+                  stepCompleted[step]
+                    ? "bg-emerald-600 text-white"
+                    : step === activeStep
+                      ? "bg-[var(--accent)] text-white ring-4 ring-[var(--ring)]"
+                      : step <= resolvedStep
+                        ? "bg-white/80 text-[var(--foreground)] border border-[var(--border)]"
+                        : "bg-white/40 text-[var(--muted)] border border-[var(--border)] opacity-50 cursor-not-allowed"
+                }`}
+              >
+                {stepCompleted[step] ? (
+                  <CheckCircle2 className="h-4 w-4" />
+                ) : (
+                  step
+                )}
+              </button>
+              {idx < 4 && (
+                <div
+                  className={`hidden h-0.5 w-6 rounded-full sm:block md:w-10 lg:w-14 ${
+                    stepCompleted[step]
+                      ? "bg-emerald-400"
+                      : "bg-[var(--border)]"
+                  }`}
+                />
+              )}
+            </div>
+          ))}
+        </div>
+
+        {/* Current step label */}
+        <div className="mt-4">
+          <p className="text-sm font-semibold">
+            Step {activeStep}: {STEP_META[activeStep].label}
+          </p>
+          <p className="mt-1 text-sm text-[var(--muted)]">
+            {STEP_META[activeStep].description}
+          </p>
+        </div>
       </div>
 
-      <div className="grid gap-6 xl:grid-cols-2">
-        <ImportSection
+      {/* ── Step content ───────────────────────────────── */}
+      {activeStep === 1 && (
+        <WizardUploadStep
           kind="employees"
-          title="Employee CSV Upload"
-          description="Upload `employees.csv`, validate every row, review the first 20 records, then replace the active employee dataset."
+          title="Upload Employee Dataset"
+          description="Upload `employees.csv` to populate the workforce master. All rows will be validated against the organization branch structure."
           badgeLabel="employees.csv"
           inputId={employeeInputId}
           isParsing={isParsingEmployee}
-          onFileSelection={handleEmployeeFileSelection}
+          onFileSelection={handleEmployeeFile}
           candidate={employeeCandidate}
           errorMessage={employeeError}
           onImport={importEmployees}
           canImport={employeeCanImport}
+          stepCompleted={stepCompleted[1]}
+          completedCount={employees.length}
+          completedLabel="employees loaded"
+          onContinue={() => setCurrentStep(2)}
           replacementWarning={
             employees.length > 0 && employeeCandidate ? (
               <ReplacementWarningCard
                 currentEmployeeCount={employees.length}
                 newEmployeeCount={employeeCandidate.summary.validRecords}
-                lastImportDate={employeeImportMeta?.importedAt ?? null}
+                lastImportDate={dataset.employeeImport?.importedAt ?? null}
                 confirmed={employeeReplacementConfirmed}
                 onConfirmedChange={setEmployeeReplacementConfirmed}
               />
             ) : null
           }
         />
+      )}
 
-        <ImportSection
-          kind="work_history"
-          title="Work History CSV Upload"
-          description="Upload `work_history.csv`, validate it against the active employee master, review the first 20 rows, then replace the work history dataset."
-          badgeLabel="work_history.csv"
-          inputId={workHistoryInputId}
-          isParsing={isParsingWorkHistory}
-          onFileSelection={handleWorkHistoryFileSelection}
-          candidate={workHistoryCandidate}
-          errorMessage={workHistoryError}
-          onImport={importWorkHistory}
-          canImport={employees.length > 0 && workHistoryCandidate?.summary.invalidRecords === 0}
-        />
-        <ImportSection
+      {activeStep === 2 && (
+        <WizardUploadStep
           kind="training"
-          title="Training History CSV Upload"
-          description="Upload `training_history.csv`, validate it against the active employee master, review the first 20 rows, then replace the training dataset."
+          title="Upload Training History"
+          description="Upload `training_history.csv` and validate it against the active employee master."
           badgeLabel="training_history.csv"
           inputId={trainingInputId}
           isParsing={isParsingTraining}
-          onFileSelection={handleTrainingFileSelection}
+          onFileSelection={handleTrainingFile}
           candidate={trainingCandidate}
           errorMessage={trainingError}
-          onImport={importTrainingHistory}
+          onImport={importTraining}
           canImport={trainingCanImport}
-          topNotice={
-            employees.length === 0 ? (
-              <NoticeCard
-                tone="warning"
-                title="Employee dataset required first"
-                body="Training validation depends on the active employee master. Import `employees.csv` before validating training history."
-              />
-            ) : null
-          }
+          stepCompleted={stepCompleted[2]}
+          completedCount={trainingHistory.length}
+          completedLabel="training records loaded"
+          onContinue={() => setCurrentStep(3)}
         />
-      </div>
+      )}
+
+      {activeStep === 3 && (
+        <WizardUploadStep
+          kind="work_history"
+          title="Upload Work History"
+          description="Upload `work_history.csv` and validate it against the active employee master."
+          badgeLabel="work_history.csv"
+          inputId={workHistoryInputId}
+          isParsing={isParsingWorkHistory}
+          onFileSelection={handleWorkHistoryFile}
+          candidate={workHistoryCandidate}
+          errorMessage={workHistoryError}
+          onImport={importWorkHistory}
+          canImport={workHistoryCanImport}
+          stepCompleted={stepCompleted[3]}
+          completedCount={workHistory.length}
+          completedLabel="work history records loaded"
+          onContinue={() => setCurrentStep(4)}
+        />
+      )}
+
+      {activeStep === 4 && (
+        <ReviewStep
+          employeeCount={employees.length}
+          trainingCount={trainingHistory.length}
+          workHistoryCount={workHistory.length}
+          dataset={dataset}
+          onContinue={() => setCurrentStep(5)}
+          allComplete={stepCompleted[4]}
+        />
+      )}
+
+      {activeStep === 5 && <SuccessStep />}
+
+      {/* ── Reset confirmation dialog ─────────────────── */}
+      {showResetDialog && (
+        <ResetConfirmationDialog
+          onCancel={() => setShowResetDialog(false)}
+          onConfirm={handleReset}
+        />
+      )}
     </div>
   );
 }
 
-function ImportSection<T>({
+/* ────────────────────── Upload Step ────────────────────────────────── */
+
+function WizardUploadStep<T>({
   kind,
   title,
   description,
@@ -410,8 +569,11 @@ function ImportSection<T>({
   errorMessage,
   onImport,
   canImport,
+  stepCompleted,
+  completedCount,
+  completedLabel,
+  onContinue,
   replacementWarning,
-  topNotice,
 }: {
   kind: ImportKind;
   title: string;
@@ -424,15 +586,26 @@ function ImportSection<T>({
   errorMessage: string | null;
   onImport: () => void;
   canImport: boolean;
+  stepCompleted: boolean;
+  completedCount: number;
+  completedLabel: string;
+  onContinue: () => void;
   replacementWarning?: React.ReactNode;
-  topNotice?: React.ReactNode;
 }) {
   return (
     <Card className="rounded-[30px]">
       <CardHeader>
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div className="space-y-3">
-            <Badge>{badgeLabel}</Badge>
+            <div className="flex items-center gap-3">
+              <Badge>{badgeLabel}</Badge>
+              {stepCompleted && (
+                <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-100 px-3 py-1 text-[11px] font-semibold text-emerald-700">
+                  <CheckCircle2 className="h-3 w-3" />
+                  Imported
+                </span>
+              )}
+            </div>
             <div>
               <CardTitle>{title}</CardTitle>
               <CardDescription className="mt-2 max-w-2xl">
@@ -447,7 +620,7 @@ function ImportSection<T>({
               className="inline-flex cursor-pointer items-center gap-2 rounded-full bg-[var(--accent)] px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-[var(--accent-strong)]"
             >
               <Upload className="h-4 w-4" />
-              Upload CSV
+              {stepCompleted ? "Re-upload CSV" : "Upload CSV"}
             </label>
             <input
               id={inputId}
@@ -456,26 +629,50 @@ function ImportSection<T>({
               onChange={onFileSelection}
               className="sr-only"
             />
-            {isParsing ? (
+            {isParsing && (
               <p className="text-xs font-medium text-[var(--muted)]">
                 Validating file...
               </p>
-            ) : null}
+            )}
           </div>
         </div>
       </CardHeader>
 
       <CardContent className="space-y-5">
-        {topNotice}
-        {errorMessage ? (
+        {/* Completed state */}
+        {stepCompleted && !candidate && (
+          <div className="flex items-center justify-between gap-4 rounded-[24px] border border-emerald-200 bg-emerald-50/80 p-5">
+            <div className="flex items-center gap-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-emerald-600 text-white">
+                <CheckCircle2 className="h-4 w-4" />
+              </div>
+              <div>
+                <p className="text-sm font-semibold text-emerald-900">
+                  Dataset imported successfully
+                </p>
+                <p className="mt-0.5 text-sm text-emerald-700">
+                  {completedCount.toLocaleString()} {completedLabel}
+                </p>
+              </div>
+            </div>
+            <Button onClick={onContinue} className="gap-2">
+              Continue
+              <ArrowRight className="h-4 w-4" />
+            </Button>
+          </div>
+        )}
+
+        {/* Error */}
+        {errorMessage && (
           <NoticeCard
             tone="warning"
             title="Validation could not start"
             body={errorMessage}
           />
-        ) : null}
+        )}
 
-        {candidate ? (
+        {/* Candidate review */}
+        {candidate && (
           <>
             <ValidationSummaryCard
               kind={kind}
@@ -500,7 +697,10 @@ function ImportSection<T>({
               </Button>
             </div>
           </>
-        ) : (
+        )}
+
+        {/* Empty state */}
+        {!stepCompleted && !candidate && !errorMessage && (
           <EmptyValidationState />
         )}
       </CardContent>
@@ -508,80 +708,228 @@ function ImportSection<T>({
   );
 }
 
-function CurrentDatasetCard({
+/* ────────────────────── Review Step (Step 4) ──────────────────────── */
+
+function ReviewStep({
   employeeCount,
   trainingCount,
-  employeeImportMeta,
-  trainingImportMeta,
+  workHistoryCount,
+  dataset,
+  onContinue,
+  allComplete,
 }: {
   employeeCount: number;
   trainingCount: number;
-  employeeImportMeta: DatasetImportMeta | null;
-  trainingImportMeta: DatasetImportMeta | null;
+  workHistoryCount: number;
+  dataset: {
+    employeeImport: DatasetImportMeta | null;
+    trainingImport: DatasetImportMeta | null;
+    workHistoryImport: DatasetImportMeta | null;
+  };
+  onContinue: () => void;
+  allComplete: boolean;
 }) {
+  const summaryItems = [
+    {
+      icon: Users,
+      label: "Employee Dataset",
+      count: employeeCount,
+      meta: dataset.employeeImport,
+      status: employeeCount > 0,
+    },
+    {
+      icon: GraduationCap,
+      label: "Training History",
+      count: trainingCount,
+      meta: dataset.trainingImport,
+      status: !!dataset.trainingImport,
+    },
+    {
+      icon: History,
+      label: "Work History",
+      count: workHistoryCount,
+      meta: dataset.workHistoryImport,
+      status: !!dataset.workHistoryImport,
+    },
+  ];
+
   return (
     <Card className="rounded-[30px]">
       <CardHeader>
-        <CardTitle>Current Active Dataset</CardTitle>
+        <div className="flex items-center gap-3">
+          <Badge>Review</Badge>
+          {allComplete && (
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-100 px-3 py-1 text-[11px] font-semibold text-emerald-700">
+              <CheckCircle2 className="h-3 w-3" />
+              All datasets loaded
+            </span>
+          )}
+        </div>
+        <CardTitle>Dataset Summary</CardTitle>
         <CardDescription>
-          Imported CSV files become the active client-side dataset and persist in
-          local storage across refreshes.
+          Review all imported datasets before starting to explore your data.
         </CardDescription>
       </CardHeader>
-      <CardContent className="grid gap-4 md:grid-cols-2">
-        <DatasetMetaPanel
-          title="Employees"
-          countLabel="Current employee count"
-          countValue={employeeCount}
-          meta={employeeImportMeta}
-        />
-        <DatasetMetaPanel
-          title="Training History"
-          countLabel="Current training count"
-          countValue={trainingCount}
-          meta={trainingImportMeta}
-        />
+
+      <CardContent className="space-y-4">
+        <div className="grid gap-4 lg:grid-cols-3">
+          {summaryItems.map((item) => (
+            <div
+              key={item.label}
+              className={`rounded-[24px] border p-5 ${
+                item.status
+                  ? "border-emerald-200 bg-emerald-50/60"
+                  : "border-[var(--border)] bg-white/72"
+              }`}
+            >
+              <div className="flex items-center gap-3">
+                <div
+                  className={`flex h-10 w-10 items-center justify-center rounded-2xl ${
+                    item.status
+                      ? "bg-emerald-600 text-white"
+                      : "bg-[var(--surface)] text-[var(--muted)]"
+                  }`}
+                >
+                  <item.icon className="h-4 w-4" />
+                </div>
+                <div>
+                  <p className="text-sm font-semibold">{item.label}</p>
+                  {item.status ? (
+                    <span className="text-xs text-emerald-700">Imported</span>
+                  ) : (
+                    <span className="text-xs text-[var(--muted)]">
+                      Not imported
+                    </span>
+                  )}
+                </div>
+              </div>
+
+              <p className="mt-4 text-3xl font-semibold tracking-[-0.04em]">
+                {item.count.toLocaleString()}
+              </p>
+              <p className="mt-0.5 text-xs text-[var(--muted)]">records</p>
+
+              {item.meta && (
+                <div className="mt-4 space-y-1 border-t border-[var(--border)] pt-3 text-xs text-[var(--muted)]">
+                  <p>File: {item.meta.fileName}</p>
+                  <p>
+                    Imported:{" "}
+                    {formatRelativeTime(item.meta.importedAt)}
+                  </p>
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+
+        {allComplete && (
+          <div className="flex items-center justify-between gap-4 rounded-[24px] bg-[var(--surface)] p-5">
+            <div>
+              <p className="text-sm font-semibold">All datasets ready</p>
+              <p className="mt-1 text-sm text-[var(--muted)]">
+                Your workspace is fully configured. Continue to start exploring.
+              </p>
+            </div>
+            <Button onClick={onContinue} className="gap-2">
+              Continue
+              <ArrowRight className="h-4 w-4" />
+            </Button>
+          </div>
+        )}
       </CardContent>
     </Card>
   );
 }
 
-function DatasetMetaPanel({
-  title,
-  countLabel,
-  countValue,
-  meta,
+/* ────────────────────── Success Step (Step 5) ─────────────────────── */
+
+function SuccessStep() {
+  return (
+    <Card className="rounded-[30px] border-emerald-200 bg-emerald-50/60">
+      <CardContent className="py-12 text-center">
+        <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-3xl bg-emerald-600 text-white">
+          <CheckCircle2 className="h-7 w-7" />
+        </div>
+        <h2 className="mt-6 text-2xl font-semibold tracking-[-0.03em] text-emerald-950 sm:text-3xl">
+          You&apos;re all set!
+        </h2>
+        <p className="mx-auto mt-3 max-w-md text-base leading-7 text-emerald-800/80">
+          All datasets have been imported and persisted. Your workforce analytics
+          workspace is ready.
+        </p>
+        <div className="mt-8">
+          <Button asChild size="lg" className="gap-2 bg-emerald-600 px-8 hover:bg-emerald-700">
+            <Link href="/">
+              <LayoutDashboard className="h-4 w-4" />
+              Open Dashboard
+            </Link>
+          </Button>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+/* ──────────────── Reset Confirmation Dialog ──────────────────────── */
+
+function ResetConfirmationDialog({
+  onCancel,
+  onConfirm,
 }: {
-  title: string;
-  countLabel: string;
-  countValue: number;
-  meta: DatasetImportMeta | null;
+  onCancel: () => void;
+  onConfirm: () => void;
 }) {
   return (
-    <div className="rounded-[24px] border border-[var(--border)] bg-white/72 p-5">
-      <div className="flex items-center gap-3">
-        <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-[var(--surface)] text-[var(--accent-strong)]">
-          <FileSpreadsheet className="h-4 w-4" />
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
+      <div className="mx-4 w-full max-w-md rounded-[28px] border border-[var(--border)] bg-white p-6 shadow-2xl">
+        <div className="flex items-start gap-3">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-red-100 text-red-600">
+            <AlertTriangle className="h-5 w-5" />
+          </div>
+          <div>
+            <h3 className="text-lg font-semibold">
+              Reset All Imported Data?
+            </h3>
+            <p className="mt-2 text-sm leading-7 text-[var(--muted)]">
+              This will permanently remove:
+            </p>
+            <ul className="mt-2 space-y-1 text-sm text-[var(--muted)]">
+              <li className="flex items-center gap-2">
+                <span className="h-1.5 w-1.5 rounded-full bg-red-400" />
+                Employee Dataset
+              </li>
+              <li className="flex items-center gap-2">
+                <span className="h-1.5 w-1.5 rounded-full bg-red-400" />
+                Training History
+              </li>
+              <li className="flex items-center gap-2">
+                <span className="h-1.5 w-1.5 rounded-full bg-red-400" />
+                Work History
+              </li>
+            </ul>
+            <p className="mt-3 text-sm font-medium text-red-600">
+              This action cannot be undone.
+            </p>
+          </div>
         </div>
-        <div>
-          <p className="text-sm font-semibold">{title}</p>
-          <p className="mt-1 text-xs uppercase tracking-[0.18em] text-[var(--muted)]">
-            {countLabel}
-          </p>
+
+        <div className="mt-6 flex items-center justify-end gap-3">
+          <Button variant="secondary" onClick={onCancel}>
+            Cancel
+          </Button>
+          <Button
+            onClick={onConfirm}
+            className="bg-red-600 hover:bg-red-700"
+          >
+            Reset Everything
+          </Button>
         </div>
-      </div>
-
-      <p className="mt-5 text-3xl font-semibold tracking-[-0.04em]">
-        {countValue.toLocaleString()}
-      </p>
-
-      <div className="mt-5 space-y-2 text-sm text-[var(--muted)]">
-        <p>Last import: {formatRelativeTime(meta?.importedAt ?? null)}</p>
-        <p>File: {meta?.fileName ?? "--"}</p>
       </div>
     </div>
   );
 }
+
+/* ──────────────── Validation Summary Card ────────────────────────── */
 
 function ValidationSummaryCard({
   kind,
@@ -601,7 +949,7 @@ function ValidationSummaryCard({
     { label: "Duplicate NRP", value: summary.duplicateNrp },
   ];
 
-  if (kind === "training") {
+  if (kind === "training" || kind === "work_history") {
     items.push({
       label: "Unknown Employee NRP",
       value: summary.unknownEmployeeNrp,
@@ -615,7 +963,9 @@ function ValidationSummaryCard({
           <p className="text-sm font-semibold">Validation Summary</p>
           <p className="mt-1 text-sm text-[var(--muted)]">{fileName}</p>
         </div>
-        <Badge>{summary.invalidRecords === 0 ? "Ready to Import" : "Review Issues"}</Badge>
+        <Badge>
+          {summary.invalidRecords === 0 ? "Ready to Import" : "Review Issues"}
+        </Badge>
       </div>
 
       <div className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
@@ -636,6 +986,8 @@ function ValidationSummaryCard({
     </div>
   );
 }
+
+/* ────────────────── Replacement Warning Card ─────────────────────── */
 
 function ReplacementWarningCard({
   currentEmployeeCount,
@@ -661,8 +1013,8 @@ function ReplacementWarningCard({
             </p>
             <p className="mt-1 text-sm leading-7 text-amber-900/80">
               Importing this employee file will replace the active employee
-              dataset. Training history will be cleared until a new training file
-              is imported.
+              dataset. Training and work history will be cleared until new files
+              are imported.
             </p>
           </div>
 
@@ -712,6 +1064,8 @@ function WarningMetric({
     </div>
   );
 }
+
+/* ──────────────────── Preview Table Card ──────────────────────────── */
 
 function PreviewTableCard({ rows }: { rows: Record<string, string>[] }) {
   const previewRows = rows.slice(0, 20);
@@ -768,6 +1122,8 @@ function PreviewTableCard({ rows }: { rows: Record<string, string>[] }) {
   );
 }
 
+/* ────────────────── Issue List Card ───────────────────────────────── */
+
 function IssueListCard({ issues }: { issues: ImportIssue[] }) {
   if (issues.length === 0) {
     return (
@@ -804,74 +1160,7 @@ function IssueListCard({ issues }: { issues: ImportIssue[] }) {
   );
 }
 
-function ImportSuccessCard({
-  success,
-}: {
-  success: ImportSuccessState | null;
-}) {
-  if (!success) {
-    return (
-      <Card className="rounded-[30px]">
-        <CardHeader>
-          <CardTitle>Import Success Summary</CardTitle>
-          <CardDescription>
-            A completed import will appear here with dataset size and timestamp.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="rounded-[24px] border border-dashed border-[var(--border)] bg-white/60 p-6 text-sm leading-7 text-[var(--muted)]">
-            No successful import yet in this session.
-          </div>
-        </CardContent>
-      </Card>
-    );
-  }
-
-  return (
-    <Card className="rounded-[30px] border-emerald-200 bg-emerald-50/80">
-      <CardHeader>
-        <div className="flex items-start gap-3">
-          <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-emerald-600 text-white">
-            <CheckCircle2 className="h-5 w-5" />
-          </div>
-          <div>
-            <CardTitle className="text-emerald-950">Import successful</CardTitle>
-            <CardDescription className="mt-2 text-emerald-900/75">
-              The {success.kind === "employees" ? "employee" : "training"} dataset
-              is now active in Zustand and persisted to local storage.
-            </CardDescription>
-          </div>
-        </div>
-      </CardHeader>
-      <CardContent className="grid gap-3 sm:grid-cols-2">
-        <SuccessMetric label="Imported Records" value={success.meta.recordCount} />
-        <SuccessMetric
-          label="Imported At"
-          value={formatDateLabel(success.meta.importedAt)}
-        />
-        <SuccessMetric label="File Name" value={success.meta.fileName} />
-        <SuccessMetric label="Invalid Records" value={success.invalidRecords} />
-      </CardContent>
-    </Card>
-  );
-}
-
-function SuccessMetric({
-  label,
-  value,
-}: {
-  label: string;
-  value: number | string;
-}) {
-  return (
-    <div className="rounded-[20px] border border-emerald-200 bg-white/80 p-4">
-      <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-emerald-700">
-        {label}
-      </p>
-      <p className="mt-2 text-base font-semibold text-emerald-950">{value}</p>
-    </div>
-  );
-}
+/* ────────────────── Empty / Notice helpers ────────────────────────── */
 
 function EmptyValidationState() {
   return (
@@ -913,6 +1202,8 @@ function NoticeCard({
     </div>
   );
 }
+
+/* ────────────────── Validation helpers ────────────────────────────── */
 
 function buildValidationSummary(
   totalRecords: number,

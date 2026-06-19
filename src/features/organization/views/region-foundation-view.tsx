@@ -94,12 +94,14 @@ export function RegionFoundationView({ regionId }: { regionId: string }) {
       ...summary,
       employeeCount: summary.employees.length,
       avgKpi: average(
-        summary.employees.map(
-          (employee) => employee.kpiFullYear ?? employee.kpiMidYear ?? 0,
-        ),
+        summary.employees
+          .map((employee) => employee.kpiFullYear ?? employee.kpiMidYear)
+          .filter((kpi): kpi is number => kpi !== null && kpi !== undefined)
       ),
       avgHav: average(
-        summary.employees.map((employee) => employee.havScore ?? 0),
+        summary.employees
+          .map((employee) => employee.havScore)
+          .filter((hav): hav is number => hav !== null && hav !== undefined)
       ),
       developmentMix: getStaticDistribution(
         summary.employees.map((employee) => employee.developmentProgramStatus),
@@ -120,12 +122,14 @@ export function RegionFoundationView({ regionId }: { regionId: string }) {
 
   const employeeCount = regionEmployees.length;
   const averageKpi = average(
-    regionEmployees.map(
-      (employee) => employee.kpiFullYear ?? employee.kpiMidYear ?? 0,
-    ),
+    regionEmployees
+      .map((employee) => employee.kpiFullYear ?? employee.kpiMidYear)
+      .filter((kpi): kpi is number => kpi !== null && kpi !== undefined)
   );
   const averageHav = average(
-    regionEmployees.map((employee) => employee.havScore ?? 0),
+    regionEmployees
+      .map((employee) => employee.havScore)
+      .filter((hav): hav is number => hav !== null && hav !== undefined)
   );
   const areaCount = areaSummaries.length;
   const branchCount = regionBranches.length;

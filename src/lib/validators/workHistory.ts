@@ -5,8 +5,8 @@ import type { WorkHistoryRecord } from "@/types";
 const workHistoryCsvRowSchema = z.object({
   NRP: z.string().trim().min(1, "NRP is required"),
   Position: z.string().trim().min(1, "Position is required"),
-  "Branch Code": z.string().trim().min(1, "Branch Code is required"),
-  "Branch Name": z.string().trim().min(1, "Branch Name is required"),
+  "Branch Code": z.string().trim().optional(),
+  "Branch Name": z.string().trim().optional(),
   "Start Date": z.string().trim().min(1, "Start Date is required"),
   "End Date": z.string().trim().min(1, "End Date is required"),
   POS: z.string().trim().optional(),
@@ -45,8 +45,8 @@ export function validateWorkHistoryCsvRow(
     nrp: parsed.NRP,
     position: parsed.Position,
     pos: parsed.POS || undefined,
-    branchCode: parsed["Branch Code"],
-    branchName: parsed["Branch Name"],
+    branchCode: parsed["Branch Code"] || null,
+    branchName: parsed["Branch Name"] || null,
     startDate: normalizeDate(parsed["Start Date"]),
     endDate: normalizeDate(parsed["End Date"]),
   };

@@ -1,4 +1,4 @@
-import { parseCsvRows } from "@/lib/csv/parse-csv";
+import Papa from "papaparse";
 import { validateEmployeeCsvRow } from "@/lib/validators/employee";
 import type { EmployeeRecord, ParsedDatasetResult } from "@/types";
 
@@ -34,48 +34,9 @@ const ALIAS_MAP: Record<string, string[]> = {
 };
 
 export function preprocessEmployeeCsv(csvText: string): string {
-  const lines = csvText.split(/\r?\n/);
-  if (lines.length === 0) return csvText;
-
-  const headerLine = lines[0];
-  const headers = headerLine.split(",").map((h) => h.trim());
-  const expectedCount = headers.length;
-
-  const havRawIndex = headers.findIndex((h) =>
-    ["havRaw", "HAV Raw", "hav_raw", "HAV"].includes(h)
-  );
-
-  if (havRawIndex === -1) {
-    return csvText;
-  }
-
-  const processedLines: string[] = [headerLine];
-  for (let i = 1; i < lines.length; i++) {
-    const line = lines[i].trim();
-    if (line.length === 0) continue;
-
-    const parts = line.split(",");
-    if (parts.length > expectedCount) {
-      const extraCount = parts.length - expectedCount;
-      const startMerge = havRawIndex;
-      const endMerge = havRawIndex + extraCount + 1;
-
-      const mergedValue = parts.slice(startMerge, endMerge).join(",");
-      const quotedMergedValue = `"${mergedValue.replace(/"/g, '""')}"`;
-
-      const newParts = [
-        ...parts.slice(0, startMerge),
-        quotedMergedValue,
-        ...parts.slice(endMerge),
-      ];
-
-      processedLines.push(newParts.join(","));
-    } else {
-      processedLines.push(line);
-    }
-  }
-
-  return processedLines.join("\n");
+  // Deprecated: String preprocessing is no longer used to avoid quoted-field corruption.
+  // We return the original text untouched and handle repairs at the row array level instead.
+  return csvText;
 }
 
 function normalizeEmployeeRow(row: Record<string, string>): Record<string, string> {
@@ -118,6 +79,14 @@ function normalizeEmployeeRow(row: Record<string, string>): Record<string, strin
     }
   }
 
+  // Keep raw havRaw value if present (e.g. B,B,C in UAT data)
+  const havRawKey = keys.find((k) =>
+    ["havRaw", "HAV Raw", "hav_raw"].includes(k.trim()),
+  );
+  if (havRawKey) {
+    normalized["havRaw"] = row[havRawKey];
+  }
+
   return normalized;
 }
 
@@ -125,15 +94,63 @@ export function parseEmployeeDataset(
   csvText: string,
   validBranchCodes: Set<string>,
 ): ParsedDatasetResult<EmployeeRecord> {
-  const preprocessed = preprocessEmployeeCsv(csvText);
-  const rows = parseCsvRows(preprocessed);
+  // Parse with PapaParse header: false first to avoid throwing error on raw comma columns
+  const parseResult = Papa.parse<string[]>(csvText, {
+    skipEmptyLines: "greedy",
+  });
+
+  if (parseResult.errors.length > 0) {
+    // Only throw critical syntax errors, ignore FieldMismatch errors if we handle them
+    const criticalErrors = parseResult.errors.filter(
+      (err) => err.code !== "TooManyFields" && err.code !== "TooFewFields",
+    );
+    if (criticalErrors.length > 0) {
+      throw new Error(criticalErrors.map((error) => error.message).join("; "));
+    }
+  }
+
+  const rows = parseResult.data;
+  if (rows.length === 0) {
+    return { data: [], issues: [] };
+  }
+
+  const headers = rows[0].map((h) => h.trim());
+  const expectedCount = headers.length;
+
+  const havRawIndex = headers.findIndex((h) =>
+    ["havRaw", "HAV Raw", "hav_raw", "HAV", "hav"].includes(h),
+  );
+
   const seenNrps = new Set<string>();
   const data: EmployeeRecord[] = [];
   const issues: ParsedDatasetResult<EmployeeRecord>["issues"] = [];
 
-  rows.forEach((row: Record<string, string>, index: number) => {
+  for (let i = 1; i < rows.length; i++) {
+    const rawRow = rows[i];
     try {
-      const normalizedRow = normalizeEmployeeRow(row);
+      let cleanRow = [...rawRow];
+
+      // If we have extra elements and a valid HAV index, merge them
+      if (havRawIndex !== -1 && rawRow.length > expectedCount) {
+        const extraCount = rawRow.length - expectedCount;
+        const startMerge = havRawIndex;
+        const endMerge = havRawIndex + extraCount + 1;
+
+        const mergedValue = rawRow.slice(startMerge, endMerge).join(",");
+        cleanRow = [
+          ...rawRow.slice(0, startMerge),
+          mergedValue,
+          ...rawRow.slice(endMerge),
+        ];
+      }
+
+      // Convert array of strings to Record<string, string>
+      const rowObj: Record<string, string> = {};
+      headers.forEach((header, index) => {
+        rowObj[header] = cleanRow[index] || "";
+      });
+
+      const normalizedRow = normalizeEmployeeRow(rowObj);
       const employee = validateEmployeeCsvRow(normalizedRow, validBranchCodes);
 
       if (seenNrps.has(employee.nrp)) {
@@ -144,11 +161,11 @@ export function parseEmployeeDataset(
       data.push(employee);
     } catch (error) {
       issues.push({
-        row: index + 2,
+        row: i + 1, // 1-based row index in CSV file
         message: error instanceof Error ? error.message : "Unknown employee row error",
       });
     }
-  });
+  }
 
   return { data, issues };
 }

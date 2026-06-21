@@ -36,7 +36,7 @@ export function EmployeeProfileFoundationView({ nrp }: { nrp: string }) {
   const trainingHistory = usePortalStore((state) => state.trainingHistory);
   const workHistory = usePortalStore((state) => state.workHistory);
 
-  const employee = employees.find((record) => record.nrp === nrp);
+  const employee = employees.find((record) => record.nrp.trim().toUpperCase() === nrp.trim().toUpperCase());
 
   if (!employee) {
     return (
@@ -48,15 +48,15 @@ export function EmployeeProfileFoundationView({ nrp }: { nrp: string }) {
 
   const allowedTrainingStatuses = ["Failed", "Pool of Cadre", "Promoted", "On Going"];
   const trainingRecords = [...trainingHistory]
-    .filter((record) => record.employeeNrp === employee.nrp && record.status && allowedTrainingStatuses.includes(record.status))
+    .filter((record) => record.employeeNrp.trim().toUpperCase() === employee.nrp.trim().toUpperCase() && record.status && allowedTrainingStatuses.includes(record.status))
     .sort(
       (a, b) =>
-        new Date(b.completionDate).getTime() - new Date(a.completionDate).getTime(),
+        new Date(b.completionDate || 0).getTime() - new Date(a.completionDate || 0).getTime(),
     );
 
   const workRecords = [...workHistory]
-    .filter((record) => record.nrp === employee.nrp)
-    .sort((a, b) => new Date(b.startDate).getTime() - new Date(a.startDate).getTime());
+    .filter((record) => record.nrp.trim().toUpperCase() === employee.nrp.trim().toUpperCase())
+    .sort((a, b) => new Date(b.startDate || 0).getTime() - new Date(a.startDate || 0).getTime());
 
   const branch = getOrganizationByBranchCode(employee.branchCode);
   const regionId = employee.regionDiv || branch?.region || "Unknown Region";

@@ -21,7 +21,7 @@ export function isAttentionRequired(
   const kpi = getKpiScore(employee);
   const kpiWarning = kpi > 0.50 && kpi <= 0.60;
   const hasFailedTraining = trainingRecords.some(
-    (t) => t.employeeNrp === employee.nrp && t.status === "Failed"
+    (t) => t.employeeNrp.trim().toUpperCase() === employee.nrp.trim().toUpperCase() && t.status === "Failed"
   );
   return kpiWarning || hasFailedTraining;
 }
@@ -53,7 +53,7 @@ export function isCareerStagnant(
   // 2. latest continuous work-history position tenure
   if (tenureYears === 0 && workHistory && workHistory.length > 0) {
     const matchingRecords = workHistory.filter(
-      (w) => w.nrp === employee.nrp && w.position === employee.position
+      (w) => w.nrp.trim().toUpperCase() === employee.nrp.trim().toUpperCase() && w.position === employee.position
     );
     if (matchingRecords.length > 0) {
       const latest = matchingRecords.sort(
@@ -77,7 +77,7 @@ export function isCareerStagnant(
   if (tenureYears < 4) return false;
 
   const hasPromoted = trainingRecords.some(
-    (t) => t.employeeNrp === employee.nrp && t.status === "Promoted"
+    (t) => t.employeeNrp.trim().toUpperCase() === employee.nrp.trim().toUpperCase() && t.status === "Promoted"
   );
   return !hasPromoted;
 }

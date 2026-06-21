@@ -1,91 +1,32 @@
 import Papa from "papaparse";
 import { validateEmployeeCsvRow } from "@/lib/validators/employee";
 import type { EmployeeRecord, ParsedDatasetResult } from "@/types";
-
-const ALIAS_MAP: Record<string, string[]> = {
-  NRP: ["NRP", "nrp"],
-  Nama: ["Nama", "Name", "name"],
-  Position: ["Position", "position"],
-  POS: ["POS", "pos"],
-  "Branch Code": ["Branch Code", "branchCode"],
-  "Region/Div": ["Region/Div", "regionDiv"],
-  "Area/Dept": ["Area/Dept", "areaDept"],
-  "Entry Date": ["Entry Date", "entryDate"],
-  "Date of Birth": ["Date of Birth", "dateOfBirth"],
-  "Masa Kerja Total": ["Masa Kerja Total", "masaKerjaTotal"],
-  "Masa Kerja Jabatan": ["Masa Kerja Jabatan", "masaKerjaJabatan"],
-  "Masa Kerja Cabang": ["Masa Kerja Cabang", "masaKerjaCabang"],
-  "Last Dev'l Program": ["Last Dev'l Program", "lastDevelopmentProgram"],
-  "Status Dev'l Program": ["Status Dev'l Program", "developmentProgramStatus"],
-  "Periode Dev'l Program": ["Periode Dev'l Program", "developmentProgramPeriod"],
-  Gol: ["Gol", "golongan"],
-  "KPI Mid Year": ["KPI Mid Year", "kpiMidYear"],
-  "KPI Full Year": ["KPI Full Year", "kpiFullYear"],
-  "PK 2023": ["PK 2023", "pk2023"],
-  "PK 2024": ["PK 2024", "pk2024"],
-  "PK 2025": ["PK 2025", "pk2025"],
-  "Link Photo": ["Link Photo", "photoUrl"],
-  "Strength 1": ["Strength 1", "strength1"],
-  "Strength 2": ["Strength 2", "strength2"],
-  "Areas of Development 1": ["Areas of Development 1", "developmentArea1"],
-  "Areas of Development 2": ["Areas of Development 2", "developmentArea2"],
-  "Level Pendidikan Terakhir": ["Level Pendidikan Terakhir", "educationLevel"],
-  "Institusi Pendidikan Terakhir": ["Institusi Pendidikan Terakhir", "educationInstitution"],
-};
-
-export function preprocessEmployeeCsv(csvText: string): string {
-  // Deprecated: String preprocessing is no longer used to avoid quoted-field corruption.
-  // We return the original text untouched and handle repairs at the row array level instead.
-  return csvText;
-}
+import { getCanonicalHeader } from "@/lib/csv/header-aliases";
 
 function normalizeEmployeeRow(row: Record<string, string>): Record<string, string> {
   const normalized: Record<string, string> = {};
 
-  // Default all schema keys to empty string to avoid missing required key validation failures
-  Object.keys(ALIAS_MAP).forEach((key) => {
+  const employeeKeys = [
+    "NRP", "Nama", "Position", "POS", "Branch Code", "Region/Div", "Area/Dept",
+    "Entry Date", "Date of Birth", "Masa Kerja Total", "Masa Kerja Jabatan", "Masa Kerja Cabang",
+    "HAV", "Last Dev'l Program", "Status Dev'l Program", "Periode Dev'l Program",
+    "Gol", "KPI Mid Year", "KPI Full Year", "PK 2023", "PK 2024", "PK 2025",
+    "Link Photo", "Strength 1", "Strength 2", "Areas of Development 1", "Areas of Development 2",
+    "Level Pendidikan Terakhir", "Institusi Pendidikan Terakhir"
+  ];
+
+  employeeKeys.forEach((key) => {
     normalized[key] = "";
   });
-  normalized["HAV"] = "";
 
-  const keys = Object.keys(row);
+  const rowKeys = Object.keys(row);
 
-  for (const [targetKey, aliases] of Object.entries(ALIAS_MAP)) {
-    const matchingAlias = aliases.find((alias) =>
-      keys.some((k) => k.trim() === alias),
-    );
-    if (matchingAlias !== undefined) {
-      const actualKey = keys.find((k) => k.trim() === matchingAlias)!;
-      normalized[targetKey] = row[actualKey];
+  rowKeys.forEach((rawKey) => {
+    const canonicalKey = getCanonicalHeader(rawKey, employeeKeys);
+    if (canonicalKey) {
+      normalized[canonicalKey] = row[rawKey] || "";
     }
-  }
-
-  // Synthesize HAV column if needed
-  const hasHav = keys.some((k) => k.trim() === "HAV");
-  if (hasHav) {
-    const actualKey = keys.find((k) => k.trim() === "HAV")!;
-    normalized["HAV"] = row[actualKey];
-  } else {
-    const categoryKey = keys.find((k) =>
-      ["havCategory", "havRaw"].includes(k.trim()),
-    );
-    const scoreKey = keys.find((k) =>
-      ["havScore", "HAV Score"].includes(k.trim()),
-    );
-    if (categoryKey) {
-      const category = row[categoryKey];
-      const score = scoreKey ? row[scoreKey] : "";
-      normalized["HAV"] = score ? `${category} (${score})` : category;
-    }
-  }
-
-  // Keep raw havRaw value if present (e.g. B,B,C in UAT data)
-  const havRawKey = keys.find((k) =>
-    ["havRaw", "HAV Raw", "hav_raw"].includes(k.trim()),
-  );
-  if (havRawKey) {
-    normalized["havRaw"] = row[havRawKey];
-  }
+  });
 
   return normalized;
 }
@@ -100,7 +41,6 @@ export function parseEmployeeDataset(
   });
 
   if (parseResult.errors.length > 0) {
-    // Only throw critical syntax errors, ignore FieldMismatch errors if we handle them
     const criticalErrors = parseResult.errors.filter(
       (err) => err.code !== "TooManyFields" && err.code !== "TooFewFields",
     );
@@ -117,9 +57,12 @@ export function parseEmployeeDataset(
   const headers = rows[0].map((h) => h.trim());
   const expectedCount = headers.length;
 
-  const havRawIndex = headers.findIndex((h) =>
-    ["havRaw", "HAV Raw", "hav_raw", "HAV", "hav"].includes(h),
-  );
+  // Find index for HAV or equivalent alias
+  const employeeKeys = ["HAV"];
+  const havRawIndex = headers.findIndex((h) => {
+    const canonical = getCanonicalHeader(h, employeeKeys);
+    return canonical === "HAV";
+  });
 
   const seenNrps = new Set<string>();
   const data: EmployeeRecord[] = [];
@@ -127,6 +70,20 @@ export function parseEmployeeDataset(
 
   for (let i = 1; i < rows.length; i++) {
     const rawRow = rows[i];
+    
+    // Check if it's the template reminder row: "DELETE THESE SAMPLE ROWS BEFORE IMPORT"
+    if (rawRow.join(",").includes("DELETE THESE SAMPLE ROWS BEFORE IMPORT")) {
+      issues.push({
+        row: i + 1,
+        message: "Template reminder row detected and skipped.",
+        type: "warning",
+        dataset: "employee",
+        code: "TEMPLATE_REMINDER_ROW",
+        currentValue: "DELETE THESE SAMPLE ROWS BEFORE IMPORT",
+      });
+      continue;
+    }
+
     try {
       let cleanRow = [...rawRow];
 
@@ -151,18 +108,47 @@ export function parseEmployeeDataset(
       });
 
       const normalizedRow = normalizeEmployeeRow(rowObj);
-      const employee = validateEmployeeCsvRow(normalizedRow, validBranchCodes);
+      const { data: employee, warnings, richWarnings } = validateEmployeeCsvRow(normalizedRow, validBranchCodes);
 
       if (seenNrps.has(employee.nrp)) {
-        throw new Error(`Duplicate NRP: ${employee.nrp}`);
+        const err = new Error(`Duplicate employee NRP detected. Only the first occurrence was imported.`);
+        (err as any).code = "DUPLICATE_EMPLOYEE_NRP";
+        (err as any).currentValue = employee.nrp;
+        throw err;
       }
 
       seenNrps.add(employee.nrp);
+
+      // Append warnings
+      if (richWarnings && richWarnings.length > 0) {
+        richWarnings.forEach((issue) => {
+          issues.push({
+            row: i + 1,
+            ...issue,
+            type: "warning",
+            dataset: "employee",
+          });
+        });
+      } else {
+        warnings.forEach((msg) => {
+          issues.push({
+            row: i + 1,
+            message: msg,
+            type: "warning",
+            dataset: "employee",
+          });
+        });
+      }
+
       data.push(employee);
     } catch (error) {
       issues.push({
-        row: i + 1, // 1-based row index in CSV file
+        row: i + 1,
         message: error instanceof Error ? error.message : "Unknown employee row error",
+        type: "error",
+        dataset: "employee",
+        code: (error as any).code || (error instanceof Error && error.message.includes("is required") ? "MISSING_REQUIRED" : "OTHER"),
+        currentValue: (error as any).currentValue || "",
       });
     }
   }

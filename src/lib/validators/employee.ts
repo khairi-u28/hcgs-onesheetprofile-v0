@@ -1,21 +1,22 @@
-import { isValid, parse, parseISO } from "date-fns";
 import { z } from "zod";
 import type { EmployeeRecord, PkRating } from "@/types";
+import { HAV_MASTER } from "@/types/employee";
+import { normalizeDateValue } from "@/lib/utils";
 
 const employeeCsvRowSchema = z.object({
-  NRP: z.string().trim().min(1, "NRP is required"),
+  NRP: z.string().trim().min(1, "NRP is required").transform((val) => val.toUpperCase()),
   Nama: z.string().trim().min(1, "Nama is required"),
-  Position: z.string().trim().min(1, "Position is required"),
-  POS: z.string().trim().min(1, "POS is required"),
-  "Branch Code": z.string().trim().min(1, "Branch Code is required"),
+  Position: z.string().trim().default(""),
+  POS: z.string().trim().default(""),
+  "Branch Code": z.string().trim().default(""),
   "Region/Div": z.string().trim().default(""),
   "Area/Dept": z.string().trim().default(""),
-  "Entry Date": z.string().trim().min(1, "Entry Date is required"),
-  "Date of Birth": z.string().trim().min(1, "Date of Birth is required"),
+  "Entry Date": z.string().trim().default(""),
+  "Date of Birth": z.string().trim().default(""),
   "Masa Kerja Total": z.string().trim().default(""),
   "Masa Kerja Jabatan": z.string().trim().default(""),
   "Masa Kerja Cabang": z.string().trim().default(""),
-  HAV: z.string().trim().min(1, "HAV is required"),
+  HAV: z.string().trim().default(""),
   "Last Dev'l Program": z.string().trim().default(""),
   "Status Dev'l Program": z.string().trim().default(""),
   "Periode Dev'l Program": z.string().trim().default(""),
@@ -34,28 +35,6 @@ const employeeCsvRowSchema = z.object({
   "Institusi Pendidikan Terakhir": z.string().trim().default(""),
 });
 
-const pkRatingSchema = z.enum(["BS", "B+", "B", "C+", "C", "K"]);
-
-function normalizeDate(value: string) {
-  const raw = value.trim();
-
-  const formats = ["yyyy-MM-dd", "dd/MM/yyyy", "MM/dd/yyyy", "dd-MM-yyyy"];
-
-  const isoDate = parseISO(raw);
-  if (isValid(isoDate)) {
-    return isoDate.toISOString();
-  }
-
-  for (const dateFormat of formats) {
-    const parsed = parse(raw, dateFormat, new Date());
-    if (isValid(parsed)) {
-      return parsed.toISOString();
-    }
-  }
-
-  throw new Error(`Invalid date: ${value}`);
-}
-
 function normalizeRatio(value: string) {
   const raw = value.trim();
   if (!raw) {
@@ -72,57 +51,188 @@ function normalizeRatio(value: string) {
   return raw.includes("%") || numericValue > 1 ? numericValue / 100 : numericValue;
 }
 
-function normalizePk(value: string): PkRating | null {
+function normalizePk(value: string, warnings: string[], fieldName: string, richWarnings?: any[]): PkRating | null {
   const raw = value.trim();
   if (!raw) {
     return null;
   }
-
-  return pkRatingSchema.parse(raw);
+  const allowed = ["BS", "B+", "B", "C+", "C", "K"];
+  if (allowed.includes(raw)) {
+    return raw as PkRating;
+  }
+  const msg = `Unknown PK value for ${fieldName}: ${value}`;
+  warnings.push(msg);
+  if (richWarnings) {
+    richWarnings.push({
+      message: msg,
+      code: "INVALID_PK",
+      currentValue: value,
+    });
+  }
+  return null;
 }
 
-function parseHav(value: string) {
+function validateGolongan(value: string, warnings: string[], richWarnings?: any[]): string {
   const raw = value.trim();
-  const match = raw.match(/^(.*?)(?:\(([\d.]+)\))?$/);
+  if (!raw) return "";
+  const VALID_GOLONGANS = new Set([
+    "1A", "1B", "1C", "1D",
+    "2A", "2B", "2C", "2D",
+    "3A", "3B", "3C", "3D",
+    "4A", "4B", "4C", "4D",
+    "5A", "5B", "5C", "5D"
+  ]);
+  if (!VALID_GOLONGANS.has(raw.toUpperCase())) {
+    const msg = `Unknown Golongan: ${value}`;
+    warnings.push(msg);
+    if (richWarnings) {
+      richWarnings.push({
+        message: msg,
+        code: "INVALID_GOLONGAN",
+        currentValue: value,
+      });
+    }
+  }
+  return raw;
+}
 
-  if (!match) {
-    throw new Error(`Invalid HAV value: ${value}`);
+function validatePhotoUrl(value: string, warnings: string[], richWarnings?: any[]): string {
+  const raw = value.trim();
+  if (!raw) return "";
+  if (!raw.startsWith("http://") && !raw.startsWith("https://") && !raw.includes("pravatar.cc")) {
+    const msg = `Malformed photo URL: ${value}`;
+    warnings.push(msg);
+    if (richWarnings) {
+      richWarnings.push({
+        message: msg,
+        code: "INVALID_PHOTO_URL",
+        currentValue: value,
+      });
+    }
+  }
+  return raw;
+}
+
+export function parseHavValue(raw: string, warnings: string[], richWarnings?: any[]): {
+  havId: number | null;
+  havCategory: string | null;
+  havRaw: string;
+} {
+  const trimmed = raw.trim();
+  if (!trimmed) {
+    return { havId: null, havCategory: null, havRaw: trimmed };
   }
 
-  return {
-    havCategory: match[1].trim(),
-    havScore: match[2] ? Number(match[2]) : null,
-    havRaw: raw,
-  };
+  // 1. Try to extract integer ID from parentheses, e.g. "Strong Performer (8)", "(8) Strong Performer", "(8)Strong Performer"
+  const idMatch = trimmed.match(/\((\d+)\)/);
+  if (idMatch) {
+    const id = parseInt(idMatch[1], 10);
+    if (id >= 1 && id <= 16) {
+      return {
+        havId: id,
+        havCategory: HAV_MASTER[id as keyof typeof HAV_MASTER],
+        havRaw: trimmed,
+      };
+    }
+  }
+
+  // 2. Clean category text (remove parentheses and any contents inside)
+  const cleanText = trimmed.replace(/\s*\([^)]*\)\s*/g, " ").replace(/\s+/g, " ").trim();
+  
+  // Case-insensitive/whitespace-insensitive match
+  const normalized = cleanText.toLowerCase().replace(/[^a-z0-9]/g, "");
+  
+  // Match canonical categories
+  let canonicalName: string | null = null;
+  switch (normalized) {
+    case "star": canonicalName = "Star"; break;
+    case "futurestar": canonicalName = "Future Star"; break;
+    case "potentialcandidate": canonicalName = "Potential Candidate"; break;
+    case "rawdiamond": canonicalName = "Raw Diamond"; break;
+    case "candidate": canonicalName = "Candidate"; break;
+    case "topperformer": canonicalName = "Top Performer"; break;
+    case "strongperformer": canonicalName = "Strong Performer"; break;
+    case "careerperson": canonicalName = "Career Person"; break;
+    case "mostunfitemployee": canonicalName = "Most Unfit Employee"; break;
+    case "unfitemployee": canonicalName = "Unfit Employee"; break;
+    case "problememployee": canonicalName = "Problem Employee"; break;
+    case "maximalcontributor": canonicalName = "Maximal Contributor"; break;
+    case "contributor": canonicalName = "Contributor"; break;
+    case "minimalcontributor": canonicalName = "Minimal Contributor"; break;
+    case "deadwood": canonicalName = "Dead Wood"; break;
+  }
+
+  if (canonicalName) {
+    const msg = "HAV ID not found. Category preserved.";
+    warnings.push(msg);
+    if (richWarnings) {
+      richWarnings.push({
+        message: msg,
+        code: "INVALID_HAV_FORMAT",
+        currentValue: trimmed,
+      });
+    }
+    return {
+      havId: null,
+      havCategory: canonicalName,
+      havRaw: trimmed,
+    };
+  } else {
+    const msg = "Unknown HAV category.";
+    warnings.push(msg);
+    if (richWarnings) {
+      richWarnings.push({
+        message: msg,
+        code: "INVALID_HAV_FORMAT",
+        currentValue: trimmed,
+      });
+    }
+    return {
+      havId: null,
+      havCategory: null,
+      havRaw: trimmed,
+    };
+  }
 }
 
 export function validateEmployeeCsvRow(
   row: Record<string, string>,
   validBranchCodes: Set<string>,
-) {
+): { data: EmployeeRecord; warnings: string[]; richWarnings?: any[] } {
+  const warnings: string[] = [];
+  const richWarnings: any[] = [];
   const parsed = employeeCsvRowSchema.parse(row);
 
-  if (!validBranchCodes.has(parsed["Branch Code"].toUpperCase())) {
-    throw new Error(`Unknown Branch Code: ${parsed["Branch Code"]}`);
+  const sampleNrps = new Set(["EX0001", "EX0002", "EX0003", "EX0004", "EX0005"]);
+  if (sampleNrps.has(parsed.NRP)) {
+    const msg = `Sample template data detected (NRP: ${parsed.NRP})`;
+    warnings.push(msg);
+    richWarnings.push({
+      message: msg,
+      code: "TEMPLATE_SAMPLE_DATA",
+      currentValue: parsed.NRP,
+    });
   }
 
-  let hav = {
-    havCategory: parsed.HAV || "",
-    havScore: null as number | null,
-    havRaw: parsed.HAV || "",
-  };
-
-  try {
-    if (parsed.HAV) {
-      hav = parseHav(parsed.HAV);
-    }
-  } catch (error) {
-    // Tolerate malformed HAV values and proceed with defaults
+  if (parsed["Branch Code"] && !validBranchCodes.has(parsed["Branch Code"].toUpperCase())) {
+    const msg = `Unknown Branch Code: ${parsed["Branch Code"]}`;
+    warnings.push(msg);
+    richWarnings.push({
+      message: msg,
+      code: "UNKNOWN_BRANCH",
+      currentValue: parsed["Branch Code"],
+    });
   }
 
-  // If original row contains a custom havRaw value, preserve it
-  if (row["havRaw"]) {
-    hav.havRaw = row["havRaw"];
+  const havResult = parseHavValue(parsed.HAV, warnings, richWarnings);
+
+  // Derive score if missing but havId exists
+  let derivedScore: number | null = null;
+  const idMatch = parsed.HAV.match(/\(([\d.]+)\)/);
+  if (idMatch) {
+    derivedScore = parseFloat(idMatch[1]);
+  } else if (havResult.havId !== null) {
+    derivedScore = havResult.havId;
   }
 
   const employee: EmployeeRecord = {
@@ -133,24 +243,25 @@ export function validateEmployeeCsvRow(
     branchCode: parsed["Branch Code"],
     regionDiv: parsed["Region/Div"],
     areaDept: parsed["Area/Dept"],
-    entryDate: normalizeDate(parsed["Entry Date"]),
-    dateOfBirth: normalizeDate(parsed["Date of Birth"]),
+    entryDate: normalizeDateValue(parsed["Entry Date"], warnings, "Entry Date", richWarnings),
+    dateOfBirth: normalizeDateValue(parsed["Date of Birth"], warnings, "Date of Birth", richWarnings),
     masaKerjaTotal: parsed["Masa Kerja Total"],
     masaKerjaJabatan: parsed["Masa Kerja Jabatan"],
     masaKerjaCabang: parsed["Masa Kerja Cabang"],
-    havCategory: hav.havCategory,
-    havScore: hav.havScore,
-    havRaw: hav.havRaw,
+    havCategory: havResult.havCategory,
+    havScore: derivedScore,
+    havRaw: havResult.havRaw,
+    havId: havResult.havId,
     lastDevelopmentProgram: parsed["Last Dev'l Program"],
     developmentProgramStatus: parsed["Status Dev'l Program"],
     developmentProgramPeriod: parsed["Periode Dev'l Program"],
-    golongan: parsed.Gol,
+    golongan: validateGolongan(parsed.Gol, warnings, richWarnings),
     kpiMidYear: normalizeRatio(parsed["KPI Mid Year"]),
     kpiFullYear: normalizeRatio(parsed["KPI Full Year"]),
-    pk2023: normalizePk(parsed["PK 2023"]),
-    pk2024: normalizePk(parsed["PK 2024"]),
-    pk2025: normalizePk(parsed["PK 2025"]),
-    photoUrl: parsed["Link Photo"],
+    pk2023: normalizePk(parsed["PK 2023"], warnings, "PK 2023", richWarnings),
+    pk2024: normalizePk(parsed["PK 2024"], warnings, "PK 2024", richWarnings),
+    pk2025: normalizePk(parsed["PK 2025"], warnings, "PK 2025", richWarnings),
+    photoUrl: validatePhotoUrl(parsed["Link Photo"], warnings, richWarnings),
     strength1: parsed["Strength 1"],
     strength2: parsed["Strength 2"],
     developmentArea1: parsed["Areas of Development 1"],
@@ -159,5 +270,5 @@ export function validateEmployeeCsvRow(
     educationInstitution: parsed["Institusi Pendidikan Terakhir"],
   };
 
-  return employee;
+  return { data: employee, warnings, richWarnings };
 }

@@ -37,6 +37,23 @@ import type {
   ImportIssue,
   TrainingHistoryRecord,
 } from "@/types";
+import {
+  generateEmployeeTemplate,
+  generateTrainingTemplate,
+  generateWorkHistoryTemplate,
+} from "@/lib/csv/templates";
+
+const downloadCsv = (content: string, fileName: string) => {
+  const blob = new Blob([content], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.setAttribute("href", url);
+  link.setAttribute("download", fileName);
+  link.style.visibility = "hidden";
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+};
 
 /* ────────────────────────── Types ──────────────────────────────────── */
 
@@ -46,11 +63,14 @@ type ValidationSummary = {
   totalRecords: number;
   validRecords: number;
   invalidRecords: number;
+  warningRecords: number;
   missingRequiredFields: number;
   invalidBranchCodes: number;
   duplicateNrp: number;
   unknownEmployeeNrp: number;
   otherIssues: number;
+  healthScore: number;
+  healthStatus: "Excellent" | "Good" | "Fair" | "Poor";
 };
 
 type ImportCandidate<T> = {
@@ -141,6 +161,11 @@ export function ImportCenterFoundationView() {
 
   const [employeeReplacementConfirmed, setEmployeeReplacementConfirmed] =
     useState(false);
+  const [confirmationModal, setConfirmationModal] = useState<{
+    summary: ValidationSummary;
+    onConfirm: () => void;
+    onCancel: () => void;
+  } | null>(null);
 
   const employeeInputId = useId();
   const trainingInputId = useId();
@@ -152,7 +177,7 @@ export function ImportCenterFoundationView() {
     [organization],
   );
   const employeeNrpSet = useMemo(
-    () => new Set(employees.map((e) => e.nrp)),
+    () => new Set(employees.map((e) => e.nrp.trim().toUpperCase())),
     [employees],
   );
 
@@ -291,18 +316,14 @@ export function ImportCenterFoundationView() {
   );
 
   /* ── Import handlers ── */
-  function importEmployees() {
-    if (
-      !employeeCandidate ||
-      employeeCandidate.summary.invalidRecords > 0
-    )
-      return;
-    if (employees.length > 0 && !employeeReplacementConfirmed) return;
-
+  function executeImportEmployees() {
+    if (!employeeCandidate) return;
     const meta: DatasetImportMeta = {
       importedAt: new Date().toISOString(),
       fileName: employeeCandidate.fileName,
       recordCount: employeeCandidate.parsedData.length,
+      warnings: employeeCandidate.issues.filter((issue) => issue.type === "warning"),
+      errors: employeeCandidate.issues.filter((issue) => issue.type === "error" || !issue.type),
     };
     replaceEmployees(employeeCandidate.parsedData, meta);
     setEmployeeCandidate(null);
@@ -310,40 +331,84 @@ export function ImportCenterFoundationView() {
     setCurrentStep(2);
   }
 
-  function importTraining() {
-    if (
-      !trainingCandidate ||
-      trainingCandidate.summary.invalidRecords > 0 ||
-      employees.length === 0
-    )
-      return;
+  function importEmployees() {
+    if (!employeeCandidate || employeeCandidate.parsedData.length === 0) return;
+    if (employees.length > 0 && !employeeReplacementConfirmed) return;
 
+    if (employeeCandidate.summary.invalidRecords > 0) {
+      setConfirmationModal({
+        summary: employeeCandidate.summary,
+        onConfirm: () => {
+          executeImportEmployees();
+          setConfirmationModal(null);
+        },
+        onCancel: () => setConfirmationModal(null),
+      });
+    } else {
+      executeImportEmployees();
+    }
+  }
+
+  function executeImportTraining() {
+    if (!trainingCandidate) return;
     const meta: DatasetImportMeta = {
       importedAt: new Date().toISOString(),
       fileName: trainingCandidate.fileName,
       recordCount: trainingCandidate.parsedData.length,
+      warnings: trainingCandidate.issues.filter((issue) => issue.type === "warning"),
+      errors: trainingCandidate.issues.filter((issue) => issue.type === "error" || !issue.type),
     };
     replaceTrainingHistory(trainingCandidate.parsedData, meta);
     setTrainingCandidate(null);
     setCurrentStep(3);
   }
 
-  function importWorkHistory() {
-    if (
-      !workHistoryCandidate ||
-      workHistoryCandidate.summary.invalidRecords > 0 ||
-      employees.length === 0
-    )
-      return;
+  function importTraining() {
+    if (!trainingCandidate || trainingCandidate.parsedData.length === 0 || employees.length === 0) return;
 
+    if (trainingCandidate.summary.invalidRecords > 0) {
+      setConfirmationModal({
+        summary: trainingCandidate.summary,
+        onConfirm: () => {
+          executeImportTraining();
+          setConfirmationModal(null);
+        },
+        onCancel: () => setConfirmationModal(null),
+      });
+    } else {
+      executeImportTraining();
+    }
+  }
+
+  function executeImportWorkHistory() {
+    if (!workHistoryCandidate) return;
     const meta: DatasetImportMeta = {
       importedAt: new Date().toISOString(),
       fileName: workHistoryCandidate.fileName,
       recordCount: workHistoryCandidate.parsedData.length,
+      warnings: workHistoryCandidate.issues.filter((issue) => issue.type === "warning"),
+      errors: workHistoryCandidate.issues.filter((issue) => issue.type === "error" || !issue.type),
     };
     replaceWorkHistory(workHistoryCandidate.parsedData, meta);
     setWorkHistoryCandidate(null);
     setCurrentStep(4);
+  }
+
+  function importWorkHistory() {
+    if (!workHistoryCandidate || workHistoryCandidate.parsedData.length === 0 || employees.length === 0) return;
+
+    if (workHistoryCandidate.summary.invalidRecords > 0) {
+      setConfirmationModal({
+        summary: workHistoryCandidate.summary,
+        onConfirm: () => {
+          executeImportWorkHistory();
+          setConfirmationModal(null);
+        },
+        onCancel: () => setConfirmationModal(null),
+      });
+    } else {
+      executeImportWorkHistory();
+    }
   }
 
   function handleReset() {
@@ -360,19 +425,19 @@ export function ImportCenterFoundationView() {
 
   /* ── Derived flags ── */
   const employeeCanImport = employeeCandidate
-    ? employeeCandidate.summary.invalidRecords === 0 &&
+    ? employeeCandidate.parsedData.length > 0 &&
       (employees.length === 0 || employeeReplacementConfirmed)
     : false;
 
   const trainingCanImport =
     !!trainingCandidate &&
     employees.length > 0 &&
-    trainingCandidate.summary.invalidRecords === 0;
+    trainingCandidate.parsedData.length > 0;
 
   const workHistoryCanImport =
     !!workHistoryCandidate &&
     employees.length > 0 &&
-    workHistoryCandidate.summary.invalidRecords === 0;
+    workHistoryCandidate.parsedData.length > 0;
 
   /* ── Step completion status ── */
   const stepCompleted: Record<WizardStep, boolean> = {
@@ -458,6 +523,46 @@ export function ImportCenterFoundationView() {
           </p>
         </div>
       </div>
+
+      {/* ── Download CSV Templates Section ────────────────── */}
+      {activeStep <= 3 && (
+        <Card className="rounded-[30px] p-6 border border-[var(--border)] shadow-sm bg-white">
+          <div className="flex flex-wrap items-start justify-between gap-4">
+            <div>
+              <CardTitle className="text-base font-semibold">Download CSV Templates</CardTitle>
+              <CardDescription className="mt-1 text-sm text-[var(--muted)]">
+                Download starter CSV files with the correct structure and sample data.
+              </CardDescription>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={() => downloadCsv(generateEmployeeTemplate(), "employees_template.csv")}
+                className="rounded-full animate-hover"
+              >
+                Employee Template
+              </Button>
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={() => downloadCsv(generateTrainingTemplate(), "training_history_template.csv")}
+                className="rounded-full animate-hover"
+              >
+                Training History Template
+              </Button>
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={() => downloadCsv(generateWorkHistoryTemplate(), "work_history_template.csv")}
+                className="rounded-full animate-hover"
+              >
+                Work History Template
+              </Button>
+            </div>
+          </div>
+        </Card>
+      )}
 
       {/* ── Step content ───────────────────────────────── */}
       {activeStep === 1 && (
@@ -551,6 +656,15 @@ export function ImportCenterFoundationView() {
           onConfirm={handleReset}
         />
       )}
+
+      {/* ── Import confirmation dialog ─────────────────── */}
+      {confirmationModal && (
+        <ImportConfirmationModal
+          summary={confirmationModal.summary}
+          onConfirm={confirmationModal.onConfirm}
+          onCancel={confirmationModal.onCancel}
+        />
+      )}
     </div>
   );
 }
@@ -639,6 +753,37 @@ function WizardUploadStep<T>({
       </CardHeader>
 
       <CardContent className="space-y-5">
+        {/* Required Datasets Specification Card */}
+        {(!stepCompleted || candidate) && (
+          <div className="rounded-[22px] border border-[var(--border)] bg-[var(--surface)] p-4 text-sm">
+            <div className="flex items-center justify-between flex-wrap gap-4">
+              <div>
+                <p className="font-semibold text-slate-800">Required Datasets</p>
+                <p className="text-xs text-[var(--muted)] mt-1">
+                  Required columns: <span className="font-medium text-slate-700">
+                    {kind === "employees" ? "NRP, Nama, HAV" :
+                     kind === "training" ? "NRP, Training Name" :
+                     "NRP, Position, Start Date"}
+                  </span>
+                </p>
+              </div>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => {
+                  if (kind === "employees") downloadCsv(generateEmployeeTemplate(), "employees_template.csv");
+                  else if (kind === "training") downloadCsv(generateTrainingTemplate(), "training_history_template.csv");
+                  else downloadCsv(generateWorkHistoryTemplate(), "work_history_template.csv");
+                }}
+                className="gap-2 text-[var(--accent)] hover:bg-[var(--accent)]/10"
+              >
+                <Upload className="h-3.5 w-3.5 rotate-180" />
+                Download Template
+              </Button>
+            </div>
+          </div>
+        )}
+
         {/* Completed state */}
         {stepCompleted && !candidate && (
           <div className="flex items-center justify-between gap-4 rounded-[24px] border border-emerald-200 bg-emerald-50/80 p-5">
@@ -689,7 +834,7 @@ function WizardUploadStep<T>({
                 <p className="mt-1 text-sm leading-7 text-[var(--muted)]">
                   {candidate.summary.invalidRecords === 0
                     ? "All rows are valid. Import will replace the active dataset for this file type."
-                    : "Resolve invalid rows before importing this dataset."}
+                    : `${candidate.summary.invalidRecords} row(s) contain blocking errors. You can still continue to import the valid rows (errors will be skipped) or cancel to fix them.`}
                 </p>
               </div>
               <Button onClick={onImport} disabled={!canImport}>
@@ -941,20 +1086,17 @@ function ValidationSummaryCard({
   summary: ValidationSummary;
 }) {
   const items = [
-    { label: "Total Records", value: summary.totalRecords },
-    { label: "Valid Records", value: summary.validRecords },
-    { label: "Invalid Records", value: summary.invalidRecords },
-    { label: "Missing Required Fields", value: summary.missingRequiredFields },
-    { label: "Invalid Branch Codes", value: summary.invalidBranchCodes },
-    { label: "Duplicate NRP", value: summary.duplicateNrp },
+    { label: "Imported Rows", value: summary.validRecords },
+    { label: "Warning Rows", value: summary.warningRecords },
+    { label: "Error Rows", value: summary.invalidRecords },
   ];
 
-  if (kind === "training" || kind === "work_history") {
-    items.push({
-      label: "Unknown Employee NRP",
-      value: summary.unknownEmployeeNrp,
-    });
-  }
+  const ratingColors = {
+    Excellent: "bg-emerald-50 text-emerald-700 border-emerald-200",
+    Good: "bg-blue-50 text-blue-700 border-blue-200",
+    Fair: "bg-amber-50 text-amber-700 border-amber-200",
+    Poor: "bg-red-50 text-red-700 border-red-200",
+  };
 
   return (
     <div className="rounded-[26px] border border-[var(--border)] bg-[var(--surface)] p-5">
@@ -963,12 +1105,17 @@ function ValidationSummaryCard({
           <p className="text-sm font-semibold">Validation Summary</p>
           <p className="mt-1 text-sm text-[var(--muted)]">{fileName}</p>
         </div>
-        <Badge>
-          {summary.invalidRecords === 0 ? "Ready to Import" : "Review Issues"}
-        </Badge>
+        <div className="flex items-center gap-2">
+          <div className={`rounded-full border px-3 py-1 text-xs font-semibold ${ratingColors[summary.healthStatus]}`}>
+            Dataset Health: {summary.healthScore.toFixed(1)}% ({summary.healthStatus})
+          </div>
+          <Badge className={summary.invalidRecords === 0 ? "bg-emerald-50/80 text-emerald-700 border border-emerald-200/50" : "bg-rose-50/80 text-rose-700 border border-rose-200/50"}>
+            {summary.invalidRecords === 0 ? "Ready to Import" : "Review Errors"}
+          </Badge>
+        </div>
       </div>
 
-      <div className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+      <div className="mt-5 grid gap-3 sm:grid-cols-3">
         {items.map((item) => (
           <div
             key={item.label}
@@ -1124,7 +1271,180 @@ function PreviewTableCard({ rows }: { rows: Record<string, string>[] }) {
 
 /* ────────────────── Issue List Card ───────────────────────────────── */
 
+type IssueCategoryGroup = {
+  code: string;
+  title: string;
+  type: "error" | "warning";
+  count: number;
+  expected: string;
+  suggestion: string;
+  exampleValue: string;
+  affectedRows: number[];
+};
+
+function getIssueCategories(issues: ImportIssue[]): IssueCategoryGroup[] {
+  const groups: Record<string, IssueCategoryGroup> = {};
+
+  const templates: Record<string, { title: string; expected: string; suggestion: string }> = {
+    INVALID_NRP: {
+      title: "NRP Format Invalid",
+      expected: "EX0001 (or other non-empty identifier)",
+      suggestion: "Provide a valid employee identifier.",
+    },
+    INVALID_DATE: {
+      title: "Invalid Date Format",
+      expected: "MM/DD/YYYY (e.g. 06/14/2026)",
+      suggestion: "Use a supported date format. MM/DD/YYYY is preferred.",
+    },
+    UNKNOWN_HAV: {
+      title: "HAV Format Invalid",
+      expected: "Strong Performer (8)",
+      suggestion: "Use official HAV category with numeric ID.",
+    },
+    UNKNOWN_STATUS: {
+      title: "Training Status Invalid",
+      expected: "On Going, Promoted, Pool of Cadre, Failed",
+      suggestion: "Allowed values: On Going, Promoted, Pool of Cadre, Failed.",
+    },
+    MISSING_NAME: {
+      title: "Missing Employee Name",
+      expected: "Non-empty string",
+      suggestion: "Nama is required. Please fill in the employee's name.",
+    },
+    MISSING_REQUIRED: {
+      title: "Missing Required Fields",
+      expected: "Non-empty required field",
+      suggestion: "Make sure all required columns (NRP, Nama, Training Name, Position) are present and filled.",
+    },
+    UNKNOWN_BRANCH: {
+      title: "Unknown Branch Code",
+      expected: "Valid Auto2000 branch code (e.g. T486)",
+      suggestion: "Use a valid branch code from the organization hierarchy.",
+    },
+    DUPLICATE_NRP: {
+      title: "Duplicate NRP",
+      expected: "Unique NRP across all rows",
+      suggestion: "Ensure each employee has exactly one row in the Master file.",
+    },
+    UNKNOWN_EMPLOYEE_NRP: {
+      title: "Unknown Employee NRP Reference",
+      expected: "NRP that exists in Employee Master",
+      suggestion: "Ensure the employee is imported in the Employee Master dataset first.",
+    },
+    INVALID_PK: {
+      title: "Unknown PK Value",
+      expected: "BS, B+, B, C+, C, K",
+      suggestion: "PK ratings must be one of the standard performance appraisal scores.",
+    },
+    INVALID_GOLONGAN: {
+      title: "Unknown Golongan",
+      expected: "Valid grade (e.g. 1A to 5D)",
+      suggestion: "Golongan must match official grades (1A to 5D).",
+    },
+    INVALID_PHOTO_URL: {
+      title: "Malformed Photo URL",
+      expected: "Valid URL starting with http:// or https://",
+      suggestion: "Ensure links start with http:// or https://.",
+    },
+    DUPLICATE_EMPLOYEE_NRP: {
+      title: "Duplicate Employee NRP",
+      expected: "Unique NRP master records",
+      suggestion: "Remove duplicate NRP rows. Only one employee master record should exist per NRP.",
+    },
+    TEMPLATE_REMINDER_ROW: {
+      title: "Template Reminder Row",
+      expected: "Production data row",
+      suggestion: "Remove the template reminder row.",
+    },
+    TEMPLATE_SAMPLE_DATA: {
+      title: "Template Sample Data Detected",
+      expected: "Real employee data",
+      suggestion: "Replace sample template rows with real employee data.",
+    },
+    OTHER: {
+      title: "Other Validation Issues",
+      expected: "Valid column value",
+      suggestion: "Check the values of the affected rows.",
+    }
+  };
+
+  issues.forEach((issue) => {
+    let code = issue.code || "OTHER";
+    
+    // Map text messages to standard codes for resilience
+    if (code === "OTHER") {
+      const msg = issue.message.toLowerCase();
+      if (msg.includes("nrp format") || msg.includes("nrp invalid")) {
+        code = "INVALID_NRP";
+      } else if (msg.includes("nama is required") || msg.includes("missing employee name")) {
+        code = "MISSING_NAME";
+      } else if (msg.includes("is required")) {
+        code = "MISSING_REQUIRED";
+      } else if (msg.includes("hav id not found") || msg.includes("unknown hav category") || msg.includes("hav format invalid") || msg.includes("hav category unknown")) {
+        code = "UNKNOWN_HAV";
+      } else if (msg.includes("unknown training status")) {
+        code = "UNKNOWN_STATUS";
+      } else if (msg.includes("unknown branch code:")) {
+        code = "UNKNOWN_BRANCH";
+      } else if (msg.includes("duplicate nrp:") || msg.includes("duplicate employee nrp detected")) {
+        code = "DUPLICATE_EMPLOYEE_NRP";
+      } else if (msg.includes("references unknown employee nrp:")) {
+        code = "UNKNOWN_EMPLOYEE_NRP";
+      } else if (msg.includes("invalid date format") || msg.includes("invalid training completion date")) {
+        code = "INVALID_DATE";
+      } else if (msg.includes("unknown pk value")) {
+        code = "INVALID_PK";
+      } else if (msg.includes("unknown golongan:")) {
+        code = "INVALID_GOLONGAN";
+      } else if (msg.includes("malformed photo url")) {
+        code = "INVALID_PHOTO_URL";
+      } else if (msg.includes("template reminder row")) {
+        code = "TEMPLATE_REMINDER_ROW";
+      } else if (msg.includes("sample template data detected")) {
+        code = "TEMPLATE_SAMPLE_DATA";
+      }
+    }
+
+    let val = issue.currentValue || "";
+    if (!val) {
+      const colonIndex = issue.message.indexOf(":");
+      if (colonIndex !== -1) {
+        val = issue.message.substring(colonIndex + 1).trim();
+      } else {
+        val = "(empty)";
+      }
+    }
+
+    const type = issue.type || "error";
+
+    if (!groups[code]) {
+      const tmpl = templates[code] || templates.OTHER;
+      groups[code] = {
+        code,
+        title: tmpl.title,
+        type,
+        count: 0,
+        expected: tmpl.expected,
+        suggestion: tmpl.suggestion,
+        exampleValue: val,
+        affectedRows: [],
+      };
+    }
+
+    groups[code].count++;
+    groups[code].affectedRows.push(issue.row);
+  });
+
+  return Object.values(groups);
+}
+
 function IssueListCard({ issues }: { issues: ImportIssue[] }) {
+  const [warningsOpen, setWarningsOpen] = useState(false);
+  const [expandedCategory, setExpandedCategory] = useState<string | null>(null);
+
+  const errors = issues.filter((issue) => issue.type === "error" || !issue.type);
+  const warnings = issues.filter((issue) => issue.type === "warning");
+
   if (issues.length === 0) {
     return (
       <NoticeCard
@@ -1135,27 +1455,139 @@ function IssueListCard({ issues }: { issues: ImportIssue[] }) {
     );
   }
 
+  const errorCategories = getIssueCategories(errors);
+
   return (
-    <div className="rounded-[26px] border border-[var(--border)] bg-white/76">
-      <div className="border-b border-[var(--border)] px-5 py-4">
-        <p className="text-sm font-semibold">Validation Issues</p>
-        <p className="mt-1 text-sm text-[var(--muted)]">
-          First {Math.min(issues.length, 12)} issues shown.
-        </p>
-      </div>
-      <div className="space-y-3 p-5">
-        {issues.slice(0, 12).map((issue) => (
-          <div
-            key={`${issue.row}-${issue.message}`}
-            className="rounded-[20px] border border-[var(--border)] bg-[var(--surface)] p-4"
-          >
-            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[var(--muted)]">
-              Row {issue.row}
-            </p>
-            <p className="mt-2 text-sm leading-7">{issue.message}</p>
+    <div className="space-y-4">
+      {/* Aggregated Errors Section */}
+      {errors.length > 0 && (
+        <div className="rounded-[26px] border border-red-200 bg-red-50/40 p-5">
+          <div className="flex items-center justify-between border-b border-red-100 pb-3">
+            <div>
+              <p className="text-sm font-semibold text-red-950">Error Categories</p>
+              <p className="text-xs text-red-700 mt-1">
+                These issues block importing and must be resolved.
+              </p>
+            </div>
+            <span className="rounded-full bg-red-100 px-3 py-1 text-xs font-bold text-red-800">
+              {errors.length} {errors.length === 1 ? "Error" : "Errors"}
+            </span>
           </div>
-        ))}
-      </div>
+
+          <div className="mt-4 space-y-4">
+            {errorCategories.map((cat) => {
+              const isExpanded = expandedCategory === cat.code;
+              return (
+                <div
+                  key={cat.code}
+                  className="rounded-[22px] border border-red-100 bg-white p-4 shadow-sm transition hover:shadow-md"
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <p className="font-semibold text-slate-800 text-sm">{cat.title}</p>
+                      <p className="text-xs text-[var(--muted)] mt-1">
+                        Affected rows: <span className="font-medium text-slate-700">{cat.count} rows</span>
+                      </p>
+                    </div>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setExpandedCategory(isExpanded ? null : cat.code)}
+                      className="text-xs text-[var(--accent)] hover:bg-[var(--accent)]/10 px-3 rounded-full"
+                    >
+                      {isExpanded ? "Hide Details" : "View Example"}
+                    </Button>
+                  </div>
+
+                  {isExpanded && (
+                    <div className="mt-4 space-y-3 border-t border-slate-100 pt-3 text-xs leading-relaxed text-slate-700">
+                      <div>
+                        <span className="font-bold text-slate-600 block uppercase tracking-wider text-[10px]">Example Current Value:</span>
+                        <code className="mt-1 block rounded bg-slate-100 px-2 py-1 text-slate-800 font-mono text-[11px] max-w-full overflow-x-auto">
+                          {cat.exampleValue}
+                        </code>
+                      </div>
+                      <div>
+                        <span className="font-bold text-slate-600 block uppercase tracking-wider text-[10px]">Expected Value:</span>
+                        <span className="mt-1 block font-medium text-emerald-700">{cat.expected}</span>
+                      </div>
+                      <div>
+                        <span className="font-bold text-slate-600 block uppercase tracking-wider text-[10px]">Recommendation:</span>
+                        <span className="mt-1 block text-slate-900 font-medium">{cat.suggestion}</span>
+                      </div>
+                      <div>
+                        <span className="font-bold text-slate-600 block uppercase tracking-wider text-[10px]">Affected Row List:</span>
+                        <span className="mt-1 block text-[var(--muted)] break-words">
+                          {cat.affectedRows.join(", ")}
+                        </span>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* Warnings Collapsible Section (Part 6) */}
+      {warnings.length > 0 && (
+        <div className="rounded-[26px] border border-amber-200 bg-amber-50/55">
+          <button
+            onClick={() => setWarningsOpen(!warningsOpen)}
+            className="w-full text-left border-b border-amber-100 px-5 py-4 flex items-center justify-between hover:bg-amber-100/30 transition-colors rounded-t-[26px]"
+          >
+            <div>
+              <p className="text-sm font-semibold text-amber-950 flex items-center gap-2">
+                <AlertTriangle className="h-4 w-4 text-amber-600 animate-pulse" />
+                View Warnings
+              </p>
+              <p className="mt-1 text-xs text-amber-700">
+                Non-blocking issues details. Click to view list.
+              </p>
+            </div>
+            <div className="flex items-center gap-3">
+              <span className="rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-semibold text-amber-800">
+                {warnings.length} {warnings.length === 1 ? 'Warning' : 'Warnings'}
+              </span>
+              <span className="text-xs font-bold text-amber-800 uppercase tracking-wider hover:underline">
+                {warningsOpen ? "Hide" : "View"}
+              </span>
+            </div>
+          </button>
+          
+          {warningsOpen && (
+            <div className="p-5 max-h-[400px] overflow-y-auto">
+              <div className="overflow-x-auto">
+                <table className="w-full text-left border-collapse text-xs">
+                  <thead>
+                    <tr className="border-b border-amber-200/50 text-amber-850 font-bold">
+                      <th className="py-2 px-3">Dataset</th>
+                      <th className="py-2 px-3">Row</th>
+                      <th className="py-2 px-3">Message</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-amber-100/30">
+                    {warnings.map((issue, idx) => (
+                      <tr key={`${issue.row}-${issue.message}-${idx}`} className="hover:bg-amber-55/30 transition-colors text-amber-900">
+                        <td className="py-2.5 px-3 font-semibold uppercase tracking-wider text-[10px] text-amber-700">
+                          {issue.dataset || "Unknown"}
+                        </td>
+                        <td className="py-2.5 px-3 font-mono font-semibold">
+                          {issue.row}
+                        </td>
+                        <td className="py-2.5 px-3 leading-relaxed">
+                          {issue.message}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }
@@ -1209,6 +1641,17 @@ function buildValidationSummary(
   totalRecords: number,
   issues: ImportIssue[],
 ): ValidationSummary {
+  const errorRows = new Set(
+    issues.filter((issue) => issue.type === "error").map((issue) => issue.row)
+  );
+  const warningRows = new Set(
+    issues.filter((issue) => issue.type === "warning").map((issue) => issue.row)
+  );
+
+  const invalidRecords = errorRows.size;
+  const warningRecords = warningRows.size;
+  const validRecords = totalRecords - invalidRecords;
+
   const missingRequiredFields = issues.filter((issue) =>
     issue.message.includes(" is required"),
   ).length;
@@ -1222,10 +1665,27 @@ function buildValidationSummary(
     issue.message.startsWith("Training record references unknown employee NRP:"),
   ).length;
 
+  const warningCount = issues.filter((issue) => issue.type === "warning").length;
+  const healthScore = totalRecords > 0
+    ? Math.max(0, Math.min(100, ((validRecords - warningCount * 0.2) / totalRecords) * 100))
+    : 100;
+
+  let healthStatus: "Excellent" | "Good" | "Fair" | "Poor" = "Excellent";
+  if (healthScore >= 95) {
+    healthStatus = "Excellent";
+  } else if (healthScore >= 85) {
+    healthStatus = "Good";
+  } else if (healthScore >= 70) {
+    healthStatus = "Fair";
+  } else {
+    healthStatus = "Poor";
+  }
+
   return {
     totalRecords,
-    validRecords: totalRecords - issues.length,
-    invalidRecords: issues.length,
+    validRecords,
+    invalidRecords,
+    warningRecords,
     missingRequiredFields,
     invalidBranchCodes,
     duplicateNrp,
@@ -1236,5 +1696,65 @@ function buildValidationSummary(
       invalidBranchCodes -
       duplicateNrp -
       unknownEmployeeNrp,
+    healthScore,
+    healthStatus,
   };
+}
+
+function ImportConfirmationModal({
+  summary,
+  onConfirm,
+  onCancel,
+}: {
+  summary: ValidationSummary;
+  onConfirm: () => void;
+  onCancel: () => void;
+}) {
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+      <div className="w-full max-w-md rounded-[32px] border border-[var(--border)] bg-white p-6 shadow-2xl animate-in zoom-in-95 duration-200">
+        <h2 className="text-xl font-bold tracking-tight text-slate-900">
+          Import Validation Result
+        </h2>
+        
+        <div className="mt-5 space-y-3 rounded-2xl bg-slate-50 p-4 text-sm font-medium text-slate-700">
+          <div className="flex justify-between">
+            <span>Valid Rows:</span>
+            <span className="text-emerald-700 font-semibold">{summary.validRecords}</span>
+          </div>
+          <div className="flex justify-between">
+            <span>Warning Rows:</span>
+            <span className="text-amber-700 font-semibold">{summary.warningRecords}</span>
+          </div>
+          <div className="flex justify-between">
+            <span>Error Rows:</span>
+            <span className="text-red-600 font-semibold">{summary.invalidRecords}</span>
+          </div>
+        </div>
+
+        <p className="mt-4 text-sm text-[var(--muted)] leading-relaxed">
+          Some rows contain blocking errors and cannot be imported.
+        </p>
+
+        <div className="mt-6 flex flex-col gap-2">
+          <Button
+            onClick={onConfirm}
+            className="w-full bg-[var(--accent)] text-white hover:bg-[var(--accent-strong)] rounded-2xl py-3"
+          >
+            Continue Import
+          </Button>
+          <Button
+            variant="ghost"
+            onClick={onCancel}
+            className="w-full text-slate-600 hover:bg-slate-100 rounded-2xl"
+          >
+            Cancel
+          </Button>
+        </div>
+        <p className="mt-3 text-center text-xs text-[var(--muted)]">
+          Continue Import will import only the valid rows and skip the rest.
+        </p>
+      </div>
+    </div>
+  );
 }

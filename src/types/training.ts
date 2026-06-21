@@ -1,8 +1,10 @@
 export type TrainingHistoryRecord = {
   employeeNrp: string;
   trainingName: string;
-  completionDate: string;
+  completionDate: string | null;
   score?: number | null;
-  status?: string;
+  status?: string | null;
   category?: string;
+  rawStatus?: string;
 };
+

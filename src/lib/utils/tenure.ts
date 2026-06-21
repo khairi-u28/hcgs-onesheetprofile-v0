@@ -25,7 +25,7 @@ function normalizeCsvTenure(csvVal: string | null | undefined): string | null {
   return null;
 }
 
-export function getMasaKerjaTotal(entryDate: string, csvTotal: string | null | undefined): string {
+export function getMasaKerjaTotal(entryDate: string | null | undefined, csvTotal: string | null | undefined): string {
   const normalized = normalizeCsvTenure(csvTotal);
   if (normalized) return normalized;
   

@@ -11,6 +11,7 @@ import { usePortalStore } from "@/store/portal-store";
 import { getOrganizationByBranchCode } from "@/lib/organization";
 import { Lightbulb, UserRound, Award, AlertTriangle, Hammer } from "lucide-react";
 import { getKpiScore, isPromotionCandidate, isCriticalIntervention, isAttentionRequired, isDevelopmentBacklog } from "@/lib/intelligence";
+import { slugifyRegionName } from "@/lib/utils/slugify";
 
 const HAV_CATEGORIES = [
   "Strong Performer",
@@ -167,7 +168,7 @@ export function BranchFoundationView({
         <Link href="/" className="hover:text-foreground hover:underline">Home</Link>
         <span>›</span>
         {regionId !== "Unknown Region" ? (
-          <Link href={`/regions/${encodeURIComponent(regionId)}`} className="hover:text-foreground hover:underline">{regionId}</Link>
+          <Link href={`/regions/${slugifyRegionName(regionId)}`} className="hover:text-foreground hover:underline">{regionId}</Link>
         ) : (
           <span>{regionId}</span>
         )}

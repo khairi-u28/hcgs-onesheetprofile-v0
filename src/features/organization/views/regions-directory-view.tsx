@@ -19,6 +19,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { getOrganizationBranches } from "@/lib/organization";
 import { usePortalStore } from "@/store/portal-store";
+import { slugifyRegionName } from "@/lib/utils/slugify";
 
 type RegionSummary = {
   regionName: string;
@@ -171,7 +172,7 @@ export function RegionsDirectoryView() {
                   <tr
                     key={row.id}
                     className="cursor-pointer hover:bg-[var(--surface)] transition-colors group"
-                    onClick={() => router.push(`/regions/${encodeURIComponent(row.original.regionName)}`)}
+                    onClick={() => router.push(`/regions/${slugifyRegionName(row.original.regionName)}`)}
                   >
                     {row.getVisibleCells().map((cell) => (
                       <td key={cell.id} className="px-6 py-4">

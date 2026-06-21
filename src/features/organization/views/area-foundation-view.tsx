@@ -8,6 +8,7 @@ import { PageHero } from "@/components/shared/page-hero";
 import { usePortalStore } from "@/store/portal-store";
 import { getOrganizationBranches } from "@/lib/organization";
 import { Lightbulb } from "lucide-react";
+import { slugifyRegionName } from "@/lib/utils/slugify";
 
 const pkScoreMap: Record<string, number> = {
   BS: 5,
@@ -131,7 +132,7 @@ export function AreaFoundationView({ areaId }: { areaId: string }) {
         <Link href="/" className="hover:text-foreground">Home</Link>
         <span>›</span>
         {regionId !== "Unknown Region" ? (
-          <Link href={`/regions/${encodeURIComponent(regionId)}`} className="hover:text-foreground">{regionId}</Link>
+          <Link href={`/regions/${slugifyRegionName(regionId)}`} className="hover:text-foreground">{regionId}</Link>
         ) : (
           <span>{regionId}</span>
         )}

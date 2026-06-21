@@ -17,7 +17,7 @@ export const HAV_MASTER = {
   16: "Dead Wood",
 } as const;
 
-export type PkRating = "BS" | "B+" | "B" | "C+" | "C" | "K";
+export type PkRating = string;
 
 export type DevelopmentProgramStatus =
   | "Completed"
@@ -62,5 +62,8 @@ export type EmployeeRecord = {
   masaKerjaTotal: string;          // Total tenure (as stored in CSV, e.g., "24-12")
   masaKerjaJabatan: string;        // Tenure in current position
   masaKerjaCabang: string;         // Tenure in current branch
+  masaKerjaTotalRaw?: string;
+  masaKerjaJabatanRaw?: string;
+  masaKerjaCabangRaw?: string;
 };
 

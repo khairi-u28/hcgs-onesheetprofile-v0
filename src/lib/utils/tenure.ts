@@ -15,19 +15,83 @@ export function calculateTenureFromDate(startDateStr: string | null | undefined)
   return formatTenure(Math.max(0, diff));
 }
 
-function normalizeCsvTenure(csvVal: string | null | undefined): string | null {
-  if (!csvVal || csvVal.trim() === "") return null;
-  const val = csvVal.trim();
-  const match = val.match(/^(\d{1,2})[-.](\d{1,2})$/);
-  if (match) {
-    return `${match[1].padStart(2, '0')}-${match[2].padStart(2, '0')}`;
+const MONTH_MAP: Record<string, string> = {
+  jan: "01", january: "01",
+  feb: "02", february: "02",
+  mar: "03", march: "03",
+  apr: "04", april: "04",
+  may: "05",
+  jun: "06", june: "06",
+  jul: "07", july: "07",
+  aug: "08", august: "08",
+  sep: "09", september: "09",
+  oct: "10", october: "10",
+  nov: "11", november: "11",
+  dec: "12", december: "12",
+};
+
+export function parseMasaKerja(rawVal: string | null | undefined): { normalized: string; raw: string } {
+  const raw = (rawVal || "").trim();
+  if (!raw) {
+    return { normalized: "--", raw: "" };
   }
-  return null;
+
+  // Check if it already matches YY-MM format
+  const clean = raw.replace(/\s+/g, "");
+  const digitMatch = clean.match(/^(\d{1,2})[-./](\d{1,2})$/);
+  if (digitMatch) {
+    const p1 = digitMatch[1].padStart(2, "0");
+    const p2 = digitMatch[2].padStart(2, "0");
+    return { normalized: `${p1}-${p2}`, raw };
+  }
+
+  // Check if it contains month names
+  const parts = clean.split(/[-./]/);
+  if (parts.length === 2) {
+    let numPart: number | null = null;
+    let monthPartVal: number | null = null;
+
+    for (const part of parts) {
+      const parsedNum = parseInt(part, 10);
+      if (!isNaN(parsedNum) && String(parsedNum) === part) {
+        numPart = parsedNum;
+      } else {
+        const lowerPart = part.toLowerCase();
+        if (MONTH_MAP[lowerPart]) {
+          monthPartVal = parseInt(MONTH_MAP[lowerPart], 10);
+        }
+      }
+    }
+
+    if (numPart !== null && monthPartVal !== null) {
+      let year: number;
+      let month: number;
+
+      if (numPart > 12) {
+        year = numPart;
+        month = monthPartVal;
+      } else {
+        if (monthPartVal > numPart) {
+          year = monthPartVal;
+          month = numPart;
+        } else {
+          year = numPart;
+          month = monthPartVal;
+        }
+      }
+
+      const yStr = String(year).padStart(2, "0");
+      const mStr = String(month).padStart(2, "0");
+      return { normalized: `${yStr}-${mStr}`, raw };
+    }
+  }
+
+  return { normalized: raw, raw };
 }
 
 export function getMasaKerjaTotal(entryDate: string | null | undefined, csvTotal: string | null | undefined): string {
-  const normalized = normalizeCsvTenure(csvTotal);
-  if (normalized) return normalized;
+  const { normalized } = parseMasaKerja(csvTotal);
+  if (normalized !== "--") return normalized;
   
   const calc = calculateTenureFromDate(entryDate);
   return calc ?? "--";
@@ -38,8 +102,8 @@ export function getMasaKerjaJabatan(
     csvJabatan: string | null | undefined, 
     workHistory: WorkHistoryRecord[]
 ): string {
-  const normalized = normalizeCsvTenure(csvJabatan);
-  if (normalized) return normalized;
+  const { normalized } = parseMasaKerja(csvJabatan);
+  if (normalized !== "--") return normalized;
 
   // Filter for matching POS
   const matchingRecords = workHistory.filter(w => w.pos === pos);
@@ -64,8 +128,8 @@ export function getMasaKerjaCabang(
     csvCabang: string | null | undefined, 
     workHistory: WorkHistoryRecord[]
 ): string {
-  const normalized = normalizeCsvTenure(csvCabang);
-  if (normalized) return normalized;
+  const { normalized } = parseMasaKerja(csvCabang);
+  if (normalized !== "--") return normalized;
 
   const matchingRecords = workHistory.filter(w => w.branchCode === branchCode);
   if (matchingRecords.length > 0) {

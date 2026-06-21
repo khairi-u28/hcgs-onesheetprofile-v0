@@ -32,7 +32,7 @@ export const HEADER_ALIASES = {
 
   // Training history specific
   "Training Name": ["Training Name", "trainingName"],
-  "Completion Date": ["Completion Date", "completionDate", "completionYear", "Training Year", "trainingYear"],
+  "Completion Date": ["Completion Date", "completionDate", "completionYear", "Training Year", "trainingYear", "Tanggal Sertifikat"],
   Status: ["Status", "status"],
   Score: ["Score", "score"],
   Category: ["Category", "category"],

@@ -8,6 +8,7 @@ import { PageHero } from "@/components/shared/page-hero";
 import { usePortalStore } from "@/store/portal-store";
 import { getOrganizationBranches } from "@/lib/organization";
 import { Users, AlertTriangle, Target, TrendingUp, ChevronRight, Lightbulb } from "lucide-react";
+import { slugifyRegionName } from "@/lib/utils/slugify";
 
 const HAV_CATEGORIES = [
   "Strong Performer",
@@ -337,7 +338,7 @@ export function DashboardFoundationView() {
           {regionSummaries.map((region) => (
             <Link
               key={region.regionId}
-              href={`/regions/${encodeURIComponent(region.regionId)}`}
+              href={`/regions/${slugifyRegionName(region.regionId)}`}
             >
               <Card className="cursor-pointer rounded-[20px] border-[var(--border)] bg-white transition-all hover:border-[var(--accent)] hover:shadow-md">
                 <CardContent className="p-5">

@@ -8,6 +8,7 @@ import { PageHero } from "@/components/shared/page-hero";
 import { usePortalStore } from "@/store/portal-store";
 import { getOrganizationBranches } from "@/lib/organization";
 import { Lightbulb } from "lucide-react";
+import { slugifyRegionName } from "@/lib/utils/slugify";
 
 const pkScoreMap: Record<string, number> = {
   BS: 5,
@@ -56,9 +57,14 @@ export function RegionFoundationView({ regionId }: { regionId: string }) {
   const employees = usePortalStore((state) => state.employees);
   const organization = getOrganizationBranches();
 
+  const targetRegionName = useMemo(() => {
+    const uniqueRegionNames = Array.from(new Set(organization.map((b) => b.region).filter(Boolean)));
+    return uniqueRegionNames.find((name) => slugifyRegionName(name) === regionId) || regionId;
+  }, [organization, regionId]);
+
   const regionBranches = useMemo(
-    () => organization.filter((branch) => branch.region === regionId),
-    [organization, regionId],
+    () => organization.filter((branch) => branch.region === targetRegionName),
+    [organization, targetRegionName],
   );
 
   const regionEmployees = useMemo(
@@ -143,13 +149,13 @@ export function RegionFoundationView({ regionId }: { regionId: string }) {
       <div className="flex items-center gap-2 text-sm text-[var(--muted)]">
         <Link href="/" className="hover:text-foreground">Home</Link>
         <span>›</span>
-        <span className="font-medium text-foreground">{regionId}</span>
+        <span className="font-medium text-foreground">{targetRegionName}</span>
       </div>
 
       <PageHero
         eyebrow="Region Detail"
-        title={regionId}
-        description={`Region-level workforce overview and area comparison for ${regionId}.`}
+        title={targetRegionName}
+        description={`Region-level workforce overview and area comparison for ${targetRegionName}.`}
       />
 
       <div className="grid gap-4 md:grid-cols-4">

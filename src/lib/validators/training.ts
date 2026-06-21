@@ -7,8 +7,8 @@ const trainingCsvRowSchema = z.object({
   "Training Name": z.string().trim().min(1, "Training Name is required"),
   "Completion Date": z.string().trim().default(""),
   Status: z.string().trim().default(""),
-  Score: z.string().trim().default(""),
-  Category: z.string().trim().default(""),
+  Score: z.string().trim().optional(),
+  Category: z.string().trim().optional(),
 });
 
 function normalizeScore(value: string, warnings: string[], richWarnings?: any[]) {
@@ -63,15 +63,24 @@ export function validateTrainingCsvRow(
     });
   }
 
-  const statusRaw = parsed.Status;
-  const VALID_STATUSES = new Set(["On Going", "Promoted", "Pool of Cadre", "Failed"]);
+  const statusRaw = parsed.Status.trim();
+  const COMPLETED_ALIASES = new Set(["COMPLETED", "COMPLETED TRAINING", "FINISHED", "DONE", "COMPLETE"]);
   
   let finalStatus: string | null = null;
   let rawStatus: string | undefined = undefined;
 
   if (statusRaw) {
-    if (VALID_STATUSES.has(statusRaw)) {
-      finalStatus = statusRaw;
+    const upperStatus = statusRaw.toUpperCase();
+    if (COMPLETED_ALIASES.has(upperStatus)) {
+      finalStatus = "Completed";
+    } else if (upperStatus === "ON GOING" || upperStatus === "ONGOING") {
+      finalStatus = "On Going";
+    } else if (upperStatus === "PROMOTED") {
+      finalStatus = "Promoted";
+    } else if (upperStatus === "POOL OF CADRE" || upperStatus === "POOLOF_CADRE") {
+      finalStatus = "Pool of Cadre";
+    } else if (upperStatus === "FAILED") {
+      finalStatus = "Failed";
     } else {
       finalStatus = null;
       rawStatus = statusRaw;
@@ -91,8 +100,8 @@ export function validateTrainingCsvRow(
     completionDate: normalizeDateValue(parsed["Completion Date"], warnings, "Completion Date", richWarnings),
     status: finalStatus,
     rawStatus,
-    score: normalizeScore(parsed.Score, warnings, richWarnings),
-    category: parsed.Category,
+    score: parsed.Score ? normalizeScore(parsed.Score, warnings, richWarnings) : null,
+    category: parsed.Category || undefined,
   };
 
   return { data: trainingRecord, warnings, richWarnings };

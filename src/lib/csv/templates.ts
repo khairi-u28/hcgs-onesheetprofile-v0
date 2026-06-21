@@ -50,28 +50,28 @@ export function generateEmployeeTemplate(): string {
 }
 
 export function generateTrainingTemplate(): string {
-  const headers = ["NRP", "Training Name", "Completion Date", "Status", "Score", "Category"];
+  const headers = ["NRP", "Training Name", "Tanggal Sertifikat", "Status"];
   const rows = [
-    ["37806", "MDP FAH", "2021-06-15", "Ongoing", "85", "Leadership"],
-    ["39233", "Project Management Essentials", "2026-03-20", "Not Started", "0", "Management"],
-    ["75765", "Time Management Workshop", "2025-11-10", "Not Started", "0", "Personal Development"],
-    ["36334", "Coaching & Mentoring Program", "2024-05-15", "Completed", "90", "Leadership"],
-    ["37807", "MDP FAH", "2023-08-12", "Completed", "95", "Leadership"],
-    ["DELETE THESE SAMPLE ROWS BEFORE IMPORT", "", "", "", "", ""]
+    ["37806", "MDP FAH", "2021-06-15", "Ongoing"],
+    ["39233", "Project Management Essentials", "2026-03-20", "Not Started"],
+    ["75765", "Time Management Workshop", "2025-11-10", "Not Started"],
+    ["36334", "Coaching & Mentoring Program", "2024-05-15", "Completed"],
+    ["37807", "MDP FAH", "2023-08-12", "Completed"],
+    ["DELETE THESE SAMPLE ROWS BEFORE IMPORT", "", "", ""]
   ];
 
   return Papa.unparse({ fields: headers, data: rows });
 }
 
 export function generateWorkHistoryTemplate(): string {
-  const headers = ["NRP", "Position", "POS", "Branch Code", "Branch Name", "Start Date", "End Date"];
+  const headers = ["NRP", "Position", "Start Date", "End Date"];
   const rows = [
-    ["37806", "TSO Collection Officer", "Collection Officer", "T486", "PASURUAN", "2013-01-03", "2018-03-01"],
-    ["39233", "TSO Account Officer", "Account Officer", "T482", "BP KEDIRI", "2023-12-11", "2024-12-31"],
-    ["75765", "TSO Collection Officer", "Collection Officer", "T544", "BP SANUR", "2014-01-12", "2019-06-30"],
-    ["36334", "TSO Product Advisor", "Product Advisor", "T461", "SBY KERTAJAYA", "2010-01-25", "2020-04-15"],
-    ["37807", "TSO Sales Supervisor", "Sales Advisor", "T461", "SBY KERTAJAYA", "2015-05-10", "2020-10-01"],
-    ["DELETE THESE SAMPLE ROWS BEFORE IMPORT", "", "", "", "", "", ""]
+    ["37806", "TSO Collection Officer", "2013-01-03", "2018-03-01"],
+    ["39233", "TSO Account Officer", "2023-12-11", "2024-12-31"],
+    ["75765", "TSO Collection Officer", "2014-01-12", "2019-06-30"],
+    ["36334", "TSO Product Advisor", "2010-01-25", "2020-04-15"],
+    ["37807", "TSO Sales Supervisor", "2015-05-10", "2020-10-01"],
+    ["DELETE THESE SAMPLE ROWS BEFORE IMPORT", "", "", ""]
   ];
 
   return Papa.unparse({ fields: headers, data: rows });

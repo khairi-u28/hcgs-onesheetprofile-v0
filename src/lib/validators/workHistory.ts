@@ -5,11 +5,11 @@ import { normalizeDateValue } from "@/lib/utils";
 const workHistoryCsvRowSchema = z.object({
   NRP: z.string().trim().min(1, "NRP is required").transform((val) => val.toUpperCase()),
   Position: z.string().trim().min(1, "Position is required"),
-  "Branch Code": z.string().trim().default(""),
-  "Branch Name": z.string().trim().default(""),
-  "Start Date": z.string().trim().default(""),
-  "End Date": z.string().trim().default(""),
-  POS: z.string().trim().default(""),
+  "Branch Code": z.string().trim().optional(),
+  "Branch Name": z.string().trim().optional(),
+  "Start Date": z.string().trim().min(1, "Start Date is required"),
+  "End Date": z.string().trim().min(1, "End Date is required"),
+  POS: z.string().trim().optional(),
 });
 
 export function validateWorkHistoryCsvRow(

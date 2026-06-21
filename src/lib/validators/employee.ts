@@ -2,6 +2,7 @@ import { z } from "zod";
 import type { EmployeeRecord, PkRating } from "@/types";
 import { HAV_MASTER } from "@/types/employee";
 import { normalizeDateValue } from "@/lib/utils";
+import { parseMasaKerja } from "@/lib/utils/tenure";
 
 const employeeCsvRowSchema = z.object({
   NRP: z.string().trim().min(1, "NRP is required").transform((val) => val.toUpperCase()),
@@ -53,47 +54,11 @@ function normalizeRatio(value: string) {
 
 function normalizePk(value: string, warnings: string[], fieldName: string, richWarnings?: any[]): PkRating | null {
   const raw = value.trim();
-  if (!raw) {
-    return null;
-  }
-  const allowed = ["BS", "B+", "B", "C+", "C", "K"];
-  if (allowed.includes(raw)) {
-    return raw as PkRating;
-  }
-  const msg = `Unknown PK value for ${fieldName}: ${value}`;
-  warnings.push(msg);
-  if (richWarnings) {
-    richWarnings.push({
-      message: msg,
-      code: "INVALID_PK",
-      currentValue: value,
-    });
-  }
-  return null;
+  return raw || null;
 }
 
 function validateGolongan(value: string, warnings: string[], richWarnings?: any[]): string {
-  const raw = value.trim();
-  if (!raw) return "";
-  const VALID_GOLONGANS = new Set([
-    "1A", "1B", "1C", "1D",
-    "2A", "2B", "2C", "2D",
-    "3A", "3B", "3C", "3D",
-    "4A", "4B", "4C", "4D",
-    "5A", "5B", "5C", "5D"
-  ]);
-  if (!VALID_GOLONGANS.has(raw.toUpperCase())) {
-    const msg = `Unknown Golongan: ${value}`;
-    warnings.push(msg);
-    if (richWarnings) {
-      richWarnings.push({
-        message: msg,
-        code: "INVALID_GOLONGAN",
-        currentValue: value,
-      });
-    }
-  }
-  return raw;
+  return value.trim();
 }
 
 function validatePhotoUrl(value: string, warnings: string[], richWarnings?: any[]): string {
@@ -119,8 +84,16 @@ export function parseHavValue(raw: string, warnings: string[], richWarnings?: an
   havRaw: string;
 } {
   const trimmed = raw.trim();
-  if (!trimmed) {
-    return { havId: null, havCategory: null, havRaw: trimmed };
+  const uncategorizedValues = new Set([
+    "#N/A", "N/A", "NA", "-", "",
+    "NULL", "null", "None", "NONE"
+  ]);
+  if (uncategorizedValues.has(trimmed) || uncategorizedValues.has(trimmed.toUpperCase())) {
+    return {
+      havId: null,
+      havCategory: "Uncategorized",
+      havRaw: trimmed,
+    };
   }
 
   // 1. Try to extract integer ID from parentheses, e.g. "Strong Performer (8)", "(8) Strong Performer", "(8)Strong Performer"
@@ -163,30 +136,12 @@ export function parseHavValue(raw: string, warnings: string[], richWarnings?: an
   }
 
   if (canonicalName) {
-    const msg = "HAV ID not found. Category preserved.";
-    warnings.push(msg);
-    if (richWarnings) {
-      richWarnings.push({
-        message: msg,
-        code: "INVALID_HAV_FORMAT",
-        currentValue: trimmed,
-      });
-    }
     return {
       havId: null,
       havCategory: canonicalName,
       havRaw: trimmed,
     };
   } else {
-    const msg = "Unknown HAV category.";
-    warnings.push(msg);
-    if (richWarnings) {
-      richWarnings.push({
-        message: msg,
-        code: "INVALID_HAV_FORMAT",
-        currentValue: trimmed,
-      });
-    }
     return {
       havId: null,
       havCategory: null,
@@ -214,16 +169,7 @@ export function validateEmployeeCsvRow(
     });
   }
 
-  if (parsed["Branch Code"] && !validBranchCodes.has(parsed["Branch Code"].toUpperCase())) {
-    const msg = `Unknown Branch Code: ${parsed["Branch Code"]}`;
-    warnings.push(msg);
-    richWarnings.push({
-      message: msg,
-      code: "UNKNOWN_BRANCH",
-      currentValue: parsed["Branch Code"],
-    });
-  }
-
+  // Removed UNKNOWN_BRANCH check to align with Production Compatibility Mode
   const havResult = parseHavValue(parsed.HAV, warnings, richWarnings);
 
   // Derive score if missing but havId exists
@@ -245,9 +191,12 @@ export function validateEmployeeCsvRow(
     areaDept: parsed["Area/Dept"],
     entryDate: normalizeDateValue(parsed["Entry Date"], warnings, "Entry Date", richWarnings),
     dateOfBirth: normalizeDateValue(parsed["Date of Birth"], warnings, "Date of Birth", richWarnings),
-    masaKerjaTotal: parsed["Masa Kerja Total"],
-    masaKerjaJabatan: parsed["Masa Kerja Jabatan"],
-    masaKerjaCabang: parsed["Masa Kerja Cabang"],
+    masaKerjaTotal: parseMasaKerja(parsed["Masa Kerja Total"]).normalized,
+    masaKerjaJabatan: parseMasaKerja(parsed["Masa Kerja Jabatan"]).normalized,
+    masaKerjaCabang: parseMasaKerja(parsed["Masa Kerja Cabang"]).normalized,
+    masaKerjaTotalRaw: parseMasaKerja(parsed["Masa Kerja Total"]).raw,
+    masaKerjaJabatanRaw: parseMasaKerja(parsed["Masa Kerja Jabatan"]).raw,
+    masaKerjaCabangRaw: parseMasaKerja(parsed["Masa Kerja Cabang"]).raw,
     havCategory: havResult.havCategory,
     havScore: derivedScore,
     havRaw: havResult.havRaw,

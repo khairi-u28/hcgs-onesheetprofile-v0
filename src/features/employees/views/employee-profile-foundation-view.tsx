@@ -10,6 +10,7 @@ import { formatDateLabel, resolvePhotoUrl } from "@/lib/utils";
 import { getMasaKerjaTotal, getMasaKerjaJabatan, getMasaKerjaCabang, calculateTenureFromDate } from "@/lib/utils/tenure";
 import { usePortalStore } from "@/store/portal-store";
 import type { EmployeeRecord, TrainingHistoryRecord, WorkHistoryRecord } from "@/types";
+import { slugifyRegionName } from "@/lib/utils/slugify";
 
 function formatPercent(value: number | null) {
   if (value === null || Number.isNaN(value)) return "--";
@@ -77,7 +78,7 @@ export function EmployeeProfileFoundationView({ nrp }: { nrp: string }) {
         <Link href={"/regions" as any} className="hover:text-foreground hover:underline">Regions</Link>
         <span>›</span>
         {regionId !== "Unknown Region" ? (
-          <Link href={`/regions/${encodeURIComponent(regionId)}`} className="hover:text-foreground hover:underline">{regionId}</Link>
+          <Link href={`/regions/${slugifyRegionName(regionId)}`} className="hover:text-foreground hover:underline">{regionId}</Link>
         ) : (
           <span>{regionId}</span>
         )}
@@ -210,18 +211,40 @@ export function EmployeeProfileFoundationView({ nrp }: { nrp: string }) {
               </div>
               <div className="space-y-4">
                 <div>
-                  <div className="text-xs font-bold uppercase tracking-wider text-[var(--muted)]">Strengths</div>
-                  <ul className="list-disc pl-4 mt-1 space-y-1 text-sm font-medium">
-                    <li>{employee.strength1 || "--"}</li>
-                    <li>{employee.strength2 || "--"}</li>
-                  </ul>
+                  <div className="text-xs font-bold uppercase tracking-wider text-[var(--muted)] mb-2">Strengths</div>
+                  <div className="flex flex-wrap gap-2">
+                    {employee.strength1 && (
+                      <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700 border border-emerald-200">
+                        <span className="text-emerald-600 font-bold">✓</span> {employee.strength1}
+                      </span>
+                    )}
+                    {employee.strength2 && (
+                      <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700 border border-emerald-200">
+                        <span className="text-emerald-600 font-bold">✓</span> {employee.strength2}
+                      </span>
+                    )}
+                    {!employee.strength1 && !employee.strength2 && (
+                      <span className="text-sm text-[var(--muted)]">--</span>
+                    )}
+                  </div>
                 </div>
                 <div>
-                  <div className="text-xs font-bold uppercase tracking-wider text-[var(--muted)]">Areas of Development</div>
-                  <ul className="list-disc pl-4 mt-1 space-y-1 text-sm font-medium">
-                    <li>{employee.developmentArea1 || "--"}</li>
-                    <li>{employee.developmentArea2 || "--"}</li>
-                  </ul>
+                  <div className="text-xs font-bold uppercase tracking-wider text-[var(--muted)] mb-2">Areas of Development</div>
+                  <div className="flex flex-wrap gap-2">
+                    {employee.developmentArea1 && (
+                      <span className="inline-flex items-center gap-1 rounded-full bg-orange-50 px-3 py-1 text-xs font-semibold text-orange-700 border border-orange-200">
+                        <span className="text-orange-600">▲</span> {employee.developmentArea1}
+                      </span>
+                    )}
+                    {employee.developmentArea2 && (
+                      <span className="inline-flex items-center gap-1 rounded-full bg-orange-50 px-3 py-1 text-xs font-semibold text-orange-700 border border-orange-200">
+                        <span className="text-orange-600">▲</span> {employee.developmentArea2}
+                      </span>
+                    )}
+                    {!employee.developmentArea1 && !employee.developmentArea2 && (
+                      <span className="text-sm text-[var(--muted)]">--</span>
+                    )}
+                  </div>
                 </div>
               </div>
             </CardContent>

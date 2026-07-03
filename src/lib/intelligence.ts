@@ -56,8 +56,8 @@ export function isCareerStagnant(
       (w) => w.nrp.trim().toUpperCase() === employee.nrp.trim().toUpperCase() && w.position === employee.position
     );
     if (matchingRecords.length > 0) {
-      const latest = matchingRecords.sort(
-        (a, b) => new Date(b.startDate).getTime() - new Date(a.startDate).getTime()
+      const latest = [...matchingRecords].sort(
+        (a, b) => new Date(b.startDate || 0).getTime() - new Date(a.startDate || 0).getTime()
       )[0];
       if (latest.startDate) {
         const date = parseISO(latest.startDate);

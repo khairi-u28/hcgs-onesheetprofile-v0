@@ -109,14 +109,14 @@ export function getMasaKerjaJabatan(
   const matchingRecords = workHistory.filter(w => w.pos === pos);
   if (matchingRecords.length > 0) {
       // Get earliest start date of contiguous or latest block? Let's just use the latest record's start date
-      const latest = matchingRecords.sort((a,b) => new Date(b.startDate).getTime() - new Date(a.startDate).getTime())[0];
+      const latest = [...matchingRecords].sort((a,b) => new Date(b.startDate || 0).getTime() - new Date(a.startDate || 0).getTime())[0];
       const calc = calculateTenureFromDate(latest.startDate);
       if (calc) return calc;
   }
   
   // Fallback to latest work history
   if (workHistory.length > 0) {
-      const latest = workHistory.sort((a,b) => new Date(b.startDate).getTime() - new Date(a.startDate).getTime())[0];
+      const latest = [...workHistory].sort((a,b) => new Date(b.startDate || 0).getTime() - new Date(a.startDate || 0).getTime())[0];
       const calc = calculateTenureFromDate(latest.startDate);
       if (calc) return calc;
   }
@@ -133,14 +133,14 @@ export function getMasaKerjaCabang(
 
   const matchingRecords = workHistory.filter(w => w.branchCode === branchCode);
   if (matchingRecords.length > 0) {
-      const latest = matchingRecords.sort((a,b) => new Date(b.startDate).getTime() - new Date(a.startDate).getTime())[0];
+      const latest = [...matchingRecords].sort((a,b) => new Date(b.startDate || 0).getTime() - new Date(a.startDate || 0).getTime())[0];
       const calc = calculateTenureFromDate(latest.startDate);
       if (calc) return calc;
   }
   
   // Fallback to latest work history
   if (workHistory.length > 0) {
-      const latest = workHistory.sort((a,b) => new Date(b.startDate).getTime() - new Date(a.startDate).getTime())[0];
+      const latest = [...workHistory].sort((a,b) => new Date(b.startDate || 0).getTime() - new Date(a.startDate || 0).getTime())[0];
       const calc = calculateTenureFromDate(latest.startDate);
       if (calc) return calc;
   }

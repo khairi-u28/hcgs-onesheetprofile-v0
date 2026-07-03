@@ -5,11 +5,11 @@ import { normalizeDateValue } from "@/lib/utils";
 const workHistoryCsvRowSchema = z.object({
   NRP: z.string().trim().min(1, "NRP is required").transform((val) => val.toUpperCase()),
   Position: z.string().trim().min(1, "Position is required"),
-  "Branch Code": z.string().trim().optional(),
-  "Branch Name": z.string().trim().optional(),
+  "Branch Code": z.string().trim().default(""),
+  "Branch Name": z.string().trim().default(""),
   "Start Date": z.string().trim().min(1, "Start Date is required"),
   "End Date": z.string().trim().min(1, "End Date is required"),
-  POS: z.string().trim().optional(),
+  POS: z.string().trim().default(""),
 });
 
 export function validateWorkHistoryCsvRow(
@@ -41,6 +41,18 @@ export function validateWorkHistoryCsvRow(
     });
   }
 
+  const rawEndDateInput = parsed["End Date"].trim();
+  const upperRawEndDate = rawEndDateInput.toUpperCase();
+  const isCurrent = ["NOW", "CURRENT", "ACTIVE"].includes(upperRawEndDate);
+
+  const rawEndDate = isCurrent ? rawEndDateInput : null;
+  let endDate: string | null = null;
+  if (isCurrent) {
+    endDate = new Date().toISOString().split("T")[0]; // Today's date (ISO)
+  } else {
+    endDate = normalizeDateValue(rawEndDateInput, warnings, "End Date", richWarnings);
+  }
+
   const workRecord: WorkHistoryRecord = {
     nrp: parsed.NRP,
     position: parsed.Position,
@@ -48,7 +60,9 @@ export function validateWorkHistoryCsvRow(
     branchCode: parsed["Branch Code"] || null,
     branchName: parsed["Branch Name"] || null,
     startDate: normalizeDateValue(parsed["Start Date"], warnings, "Start Date", richWarnings),
-    endDate: normalizeDateValue(parsed["End Date"], warnings, "End Date", richWarnings),
+    endDate,
+    isCurrent,
+    rawEndDate,
   };
 
   return { data: workRecord, warnings, richWarnings };

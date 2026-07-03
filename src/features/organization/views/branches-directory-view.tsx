@@ -1,7 +1,6 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Search } from "lucide-react";
 import {
@@ -21,6 +20,13 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { getOrganizationBranches } from "@/lib/organization";
 import { usePortalStore } from "@/store/portal-store";
+import {
+  getMainContentClasses,
+  getCardHeaderClasses,
+  getCardContentClasses,
+  getTableTdClasses,
+  getTableThClasses,
+} from "@/lib/ui/layout-config";
 
 type BranchSummary = {
   branchName: string;
@@ -143,7 +149,7 @@ export function BranchesDirectoryView() {
   });
 
   return (
-    <div className="space-y-6 pb-10">
+    <div className={getMainContentClasses("space-y-6 pb-10")}>
       <PageHero
         eyebrow="Organization Directory"
         title="Branches"
@@ -151,7 +157,7 @@ export function BranchesDirectoryView() {
       />
 
       <Card className="rounded-[24px] border-[var(--border)] bg-white shadow-sm overflow-hidden">
-        <CardHeader className="border-b border-[var(--border)] bg-slate-50/50 px-6 py-4">
+        <CardHeader className={getCardHeaderClasses("pb-4")}>
           <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
             <CardTitle className="text-base">Branches Directory</CardTitle>
             <div className="relative w-full sm:w-72">
@@ -165,7 +171,7 @@ export function BranchesDirectoryView() {
             </div>
           </div>
         </CardHeader>
-        <CardContent className="p-0">
+        <CardContent className={getCardContentClasses("p-0")}>
           <div className="overflow-x-auto">
             <table className="w-full text-left text-sm">
               <thead className="bg-slate-50 border-b border-[var(--border)]">
@@ -175,7 +181,7 @@ export function BranchesDirectoryView() {
                       <th
                         key={header.id}
                         onClick={header.column.getToggleSortingHandler()}
-                        className="px-6 py-3 font-semibold text-[var(--muted)] cursor-pointer hover:text-foreground transition-colors whitespace-nowrap"
+                        className={getTableThClasses("cursor-pointer hover:text-foreground transition-colors whitespace-nowrap")}
                       >
                         {flexRender(header.column.columnDef.header, header.getContext())}
                         {{
@@ -195,7 +201,7 @@ export function BranchesDirectoryView() {
                     onClick={() => router.push(`/branches/${encodeURIComponent(row.original.branchCode)}`)}
                   >
                     {row.getVisibleCells().map((cell) => (
-                      <td key={cell.id} className="px-6 py-4">
+                      <td key={cell.id} className={getTableTdClasses()}>
                         {flexRender(cell.column.columnDef.cell, cell.getContext())}
                       </td>
                     ))}

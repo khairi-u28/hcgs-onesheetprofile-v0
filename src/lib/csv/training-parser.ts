@@ -6,7 +6,7 @@ import { getCanonicalHeader } from "@/lib/csv/header-aliases";
 function normalizeTrainingRow(row: Record<string, string>): Record<string, string> {
   const normalized: Record<string, string> = {};
   
-  const trainingKeys = ["NRP", "Training Name", "Completion Date", "Status", "Score", "Category"];
+  const trainingKeys = ["NRP", "Training Name", "Start Date", "End Date", "Batch", "Period", "Status", "Completion Date"];
 
   // Set defaults
   trainingKeys.forEach((key) => {

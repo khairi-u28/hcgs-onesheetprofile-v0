@@ -9,6 +9,12 @@ import { navigationItems } from "@/components/layout/navigation";
 import { WelcomeScreen } from "@/components/layout/welcome-screen";
 import { usePortalStore } from "@/store/portal-store";
 import { cn } from "@/lib/utils";
+import {
+  UI_LAYOUT_PRESETS,
+  getLayoutGridStyle,
+  getMainContentClasses,
+  getSidebarStickyClasses,
+} from "@/lib/ui/layout-config";
 
 const SIDEBAR_STORAGE_KEY = "hcgs-sidebar-collapsed";
 
@@ -30,8 +36,17 @@ export function PortalShell({ children }: { children: ReactNode }) {
 
   const hasData = employees.length > 0;
 
-  // Read persisted sidebar state on mount
+  // Initialize theme classes and read persisted sidebar state on mount
   useEffect(() => {
+    // Apply layout density class overrides to HTML element
+    const root = document.documentElement;
+    root.classList.remove("theme-comfortable", "theme-compact", "theme-extra-compact");
+    if (UI_LAYOUT_PRESETS.layoutMode === "default") {
+      root.classList.add("theme-comfortable");
+    } else if (UI_LAYOUT_PRESETS.layoutMode === "compact") {
+      root.classList.add("theme-compact");
+    }
+
     try {
       const stored = localStorage.getItem(SIDEBAR_STORAGE_KEY);
       if (stored === "true") {
@@ -65,16 +80,23 @@ export function PortalShell({ children }: { children: ReactNode }) {
   // First-time experience: show welcome screen if not on import page
   const isOnImportPage = pathname === "/import";
   if (!hasData && !isOnImportPage) {
+    const welcomeGridStyle = getLayoutGridStyle(false);
     return (
       <div className="min-h-screen px-4 py-4 sm:px-6 lg:px-8">
-        <div className="mx-auto grid min-h-[calc(100vh-2rem)] max-w-[1600px] gap-4 lg:grid-cols-[280px_minmax(0,1fr)]">
+        <div
+          style={welcomeGridStyle}
+          className={cn(
+            "mx-auto grid min-h-[calc(100vh-2rem)] max-w-[1600px] gap-4 transition-[grid-template-columns] duration-300",
+            !welcomeGridStyle && "lg:grid-cols-[280px_minmax(0,1fr)]",
+          )}
+        >
           <Sidebar
             collapsed={false}
             hasData={false}
             pathname={pathname}
             onToggle={toggleSidebar}
           />
-          <main className="glass-panel rounded-[32px] border p-5 sm:p-7 lg:p-8">
+          <main className={getMainContentClasses("rounded-[32px] border")}>
             <WelcomeScreen />
           </main>
         </div>
@@ -82,14 +104,17 @@ export function PortalShell({ children }: { children: ReactNode }) {
     );
   }
 
+  const mainGridStyle = getLayoutGridStyle(collapsed);
   return (
     <div className="min-h-screen px-4 py-4 sm:px-6 lg:px-8">
       <div
+        style={mainGridStyle}
         className={cn(
           "mx-auto grid min-h-[calc(100vh-2rem)] max-w-[1600px] gap-4 transition-[grid-template-columns] duration-300",
-          collapsed
-            ? "lg:grid-cols-[72px_minmax(0,1fr)]"
-            : "lg:grid-cols-[280px_minmax(0,1fr)]",
+          !mainGridStyle &&
+            (collapsed
+              ? "lg:grid-cols-[72px_minmax(0,1fr)]"
+              : "lg:grid-cols-[280px_minmax(0,1fr)]"),
         )}
       >
         <Sidebar
@@ -98,7 +123,7 @@ export function PortalShell({ children }: { children: ReactNode }) {
           pathname={pathname}
           onToggle={toggleSidebar}
         />
-        <main className="glass-panel rounded-[32px] border p-5 sm:p-7 lg:p-8">
+        <main className={getMainContentClasses("rounded-[32px] border")}>
           <div>{children}</div>
         </main>
       </div>
@@ -124,6 +149,7 @@ function Sidebar({
       className={cn(
         "glass-panel hidden flex-col justify-between rounded-[32px] border transition-all duration-300 lg:flex",
         collapsed ? "p-3" : "p-6",
+        getSidebarStickyClasses(),
       )}
     >
       <div className={cn("space-y-6", collapsed && "space-y-4")}>

@@ -8,16 +8,12 @@ import { PageHero } from "@/components/shared/page-hero";
 import { usePortalStore } from "@/store/portal-store";
 import { getOrganizationBranches } from "@/lib/organization";
 import { Lightbulb } from "lucide-react";
-import { slugifyRegionName } from "@/lib/utils/slugify";
-
-const pkScoreMap: Record<string, number> = {
-  BS: 5,
-  "B+": 4.5,
-  B: 4,
-  "C+": 3.5,
-  C: 3,
-  K: 2,
-};
+import { slugifyRegionName, slugifyOrganizationName } from "@/lib/utils/slugify";
+import {
+  getMainContentClasses,
+  getCardHeaderClasses,
+  getCardContentClasses,
+} from "@/lib/ui/layout-config";
 
 const HAV_CATEGORIES = [
   "Strong Performer",
@@ -63,9 +59,14 @@ export function AreaFoundationView({ areaId }: { areaId: string }) {
   const employees = usePortalStore((state) => state.employees);
   const organization = getOrganizationBranches();
 
+  const targetAreaName = useMemo(() => {
+    const uniqueAreaNames = Array.from(new Set(organization.map((b) => b.area).filter(Boolean)));
+    return uniqueAreaNames.find((name) => slugifyOrganizationName(name) === areaId) || areaId;
+  }, [organization, areaId]);
+
   const areaBranches = useMemo(
-    () => organization.filter((branch) => branch.area === areaId),
-    [organization, areaId],
+    () => organization.filter((branch) => branch.area === targetAreaName),
+    [organization, targetAreaName],
   );
 
   const areaEmployees = useMemo(
@@ -127,7 +128,7 @@ export function AreaFoundationView({ areaId }: { areaId: string }) {
   const regionId = areaBranches[0]?.region ?? "Unknown Region";
 
   return (
-    <div className="space-y-6">
+    <div className={getMainContentClasses("space-y-6")}>
       <div className="flex items-center gap-2 text-sm text-[var(--muted)]">
         <Link href="/" className="hover:text-foreground">Home</Link>
         <span>›</span>
@@ -137,16 +138,16 @@ export function AreaFoundationView({ areaId }: { areaId: string }) {
           <span>{regionId}</span>
         )}
         <span>›</span>
-        <span className="font-medium text-foreground">{areaId}</span>
+        <span className="font-medium text-foreground">{targetAreaName}</span>
       </div>
 
       <PageHero
         eyebrow="Area Detail"
-        title={areaId}
-        description={`Area-level workforce analytics for ${areaId}.`}
+        title={targetAreaName}
+        description={`Area-level workforce analytics for ${targetAreaName}.`}
       />
 
-      <div className="grid gap-4 md:grid-cols-4">
+      <div className="grid gap-4 grid-cols-2 lg:grid-cols-4">
         <SummaryCard label="Employee Count" value={areaEmployees.length} />
         <SummaryCard label="Average KPI" value={formatPercent(avgKpi)} />
         <SummaryCard label="Average HAV" value={formatDecimal(avgHav)} />
@@ -154,13 +155,13 @@ export function AreaFoundationView({ areaId }: { areaId: string }) {
       </div>
 
       <Card className="rounded-[24px] border border-amber-200 bg-amber-50/50 shadow-sm">
-        <CardHeader className="pb-2 border-b border-amber-200/50 px-6 py-4">
+        <CardHeader className={getCardHeaderClasses("pb-2 border-b border-amber-200/50")}>
           <CardTitle className="text-base flex items-center gap-2 text-amber-800">
             <Lightbulb size={18} className="text-amber-600" />
             Area Intelligence Brief
           </CardTitle>
         </CardHeader>
-        <CardContent className="p-6">
+        <CardContent className={getCardContentClasses()}>
           <div className="grid gap-4 md:grid-cols-3">
             <div className="space-y-1">
               <div className="text-xs font-bold uppercase text-amber-700/70 tracking-wider">Lowest KPI Branch</div>
@@ -207,14 +208,14 @@ export function AreaFoundationView({ areaId }: { areaId: string }) {
       </div>
 
       <SectionCard title="Branch Comparison">
-        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+        <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
           {branchSummaries.map(({ branch, employeeCount, avgKpi, avgHav }) => (
             <Link
               key={branch.branchCode}
               href={`/branches/${encodeURIComponent(branch.branchCode)}`}
             >
               <Card className="cursor-pointer rounded-[26px] border-[var(--border)] bg-white/80 transition hover:bg-[var(--surface)]">
-                <CardContent className="space-y-3 p-5">
+                <CardContent className={getCardContentClasses("space-y-3")}>
                   <div className="flex items-center justify-between gap-3">
                     <p className="text-base font-semibold">{branch.branchName}</p>
                     <Badge>{branch.branchCode}</Badge>
@@ -243,10 +244,10 @@ function SectionCard({
 }) {
   return (
     <Card className="rounded-[30px] border-[var(--border)] bg-white/90">
-      <CardHeader>
+      <CardHeader className={getCardHeaderClasses()}>
         <CardTitle>{title}</CardTitle>
       </CardHeader>
-      <CardContent>{children}</CardContent>
+      <CardContent className={getCardContentClasses()}>{children}</CardContent>
     </Card>
   );
 }

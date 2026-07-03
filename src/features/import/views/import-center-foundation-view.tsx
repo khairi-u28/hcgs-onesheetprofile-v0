@@ -6,10 +6,14 @@ import {
   AlertTriangle,
   ArrowRight,
   CheckCircle2,
+  ChevronDown,
+  ChevronUp,
+  Download,
   FileSpreadsheet,
   GraduationCap,
   History,
   LayoutDashboard,
+  Loader2,
   RefreshCcw,
   RotateCcw,
   Upload,
@@ -28,6 +32,10 @@ import { formatDateLabel, formatRelativeTime } from "@/lib/utils";
 import { parseWorkHistoryDataset } from "@/lib/csv/work-history-parser";
 import { parseEmployeeDataset } from "@/lib/csv/employee-parser";
 import { parseTrainingDataset } from "@/lib/csv/training-parser";
+import {
+  getMainContentClasses,
+  getCardContentClasses,
+} from "@/lib/ui/layout-config";
 import type { WorkHistoryRecord } from "@/types";
 import { parseCsvRows } from "@/lib/csv/parse-csv";
 import { usePortalStore } from "@/store/portal-store";
@@ -136,6 +144,28 @@ export function ImportCenterFoundationView() {
 
   const [currentStep, setCurrentStep] = useState<WizardStep>(resolvedStep);
   const [showResetDialog, setShowResetDialog] = useState(false);
+  const [downloading, setDownloading] = useState<Record<string, boolean>>({});
+  const [expandedCard, setExpandedCard] = useState<Record<string, boolean>>({});
+
+  const handleDownloadCsv = async (generator: () => string, fileName: string, key: string) => {
+    if (downloading[key]) return;
+    setDownloading(prev => ({ ...prev, [key]: true }));
+    const startTime = Date.now();
+
+    try {
+      const csvContent = generator();
+      downloadCsv(csvContent, fileName);
+    } catch (e) {
+      console.error("Failed to generate/download CSV:", e);
+    }
+
+    const elapsed = Date.now() - startTime;
+    const remainingTime = 800 - elapsed;
+    if (remainingTime > 0) {
+      await new Promise(resolve => setTimeout(resolve, remainingTime));
+    }
+    setDownloading(prev => ({ ...prev, [key]: false }));
+  };
 
   // Allow the wizard to stay on a completed step to see results,
   // but never let it go ahead of resolvedStep (unless step 4→5 CTA)
@@ -449,7 +479,7 @@ export function ImportCenterFoundationView() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className={getMainContentClasses("space-y-6")}>
       {/* ── Stepper header ─────────────────────────────── */}
       <div className="rounded-[28px] bg-[var(--surface)] p-6">
         <div className="flex items-center justify-between gap-2">
@@ -526,42 +556,218 @@ export function ImportCenterFoundationView() {
 
       {/* ── Download CSV Templates Section ────────────────── */}
       {activeStep <= 3 && (
-        <Card className="rounded-[30px] p-6 border border-[var(--border)] shadow-sm bg-white">
-          <div className="flex flex-wrap items-start justify-between gap-4">
-            <div>
-              <CardTitle className="text-base font-semibold">Download CSV Templates</CardTitle>
-              <CardDescription className="mt-1 text-sm text-[var(--muted)]">
-                Download starter CSV files with the correct structure and sample data.
-              </CardDescription>
-            </div>
-            <div className="flex flex-wrap gap-2">
-              <Button
-                variant="secondary"
-                size="sm"
-                onClick={() => downloadCsv(generateEmployeeTemplate(), "employees_template.csv")}
-                className="rounded-full animate-hover"
-              >
-                Employee Template
-              </Button>
-              <Button
-                variant="secondary"
-                size="sm"
-                onClick={() => downloadCsv(generateTrainingTemplate(), "training_history_template.csv")}
-                className="rounded-full animate-hover"
-              >
-                Training History Template
-              </Button>
-              <Button
-                variant="secondary"
-                size="sm"
-                onClick={() => downloadCsv(generateWorkHistoryTemplate(), "work_history_template.csv")}
-                className="rounded-full animate-hover"
-              >
-                Work History Template
-              </Button>
-            </div>
+        <div className="space-y-4 my-6">
+          <div className="border-l-4 border-[var(--accent)] pl-3">
+            <h2 className="text-base font-bold text-slate-800 tracking-tight">Download CSV Templates</h2>
+            <p className="text-xs text-[var(--muted)] mt-0.5">
+              Download starter templates with correct columns and pre-filled sample rows to prepare your datasets.
+            </p>
           </div>
-        </Card>
+          
+          <div className="grid gap-6 md:grid-cols-3">
+            {/* Card 1: Employee Template */}
+            <Card className={getCardContentClasses("rounded-[24px] border border-slate-200 bg-white/70 shadow-sm flex flex-col justify-between overflow-hidden hover:shadow-md transition duration-300")}>
+              <div className="space-y-3 flex-grow flex flex-col justify-between">
+                <div>
+                  <div className="flex items-center justify-between">
+                    <Badge className="font-semibold bg-slate-100 text-slate-700 text-[10px] px-2 py-0.5">CSV</Badge>
+                    <FileSpreadsheet className="text-slate-400 w-5 h-5" />
+                  </div>
+                  <CardTitle className="text-base font-bold text-slate-800 mt-2">Employee Template</CardTitle>
+                  <CardDescription className="text-xs text-[var(--muted)] mt-1 min-h-[40px]">
+                    Master employee database template containing all demographic, role, performance, and education fields.
+                  </CardDescription>
+                </div>
+
+                <div className="space-y-3 mt-2">
+                  <div className="flex flex-wrap gap-2 text-[10px] font-medium text-[var(--muted)] bg-slate-50/50 p-2 rounded-lg border border-slate-100">
+                    <span><strong>29</strong> Columns</span>
+                    <span>•</span>
+                    <span><strong>5</strong> Sample Rows</span>
+                    <span>•</span>
+                    <span className="text-[var(--accent)] font-semibold">Required Fields</span>
+                  </div>
+
+                  <div>
+                    <button
+                      type="button"
+                      onClick={() => setExpandedCard(prev => ({ ...prev, emp: !prev.emp }))}
+                      className="flex items-center gap-1 text-xs font-semibold text-slate-600 hover:text-slate-800 focus:outline-none"
+                    >
+                      {expandedCard.emp ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+                      {expandedCard.emp ? "Hide Columns" : "▼ View Columns"}
+                    </button>
+                    {expandedCard.emp && (
+                      <div className="mt-2 p-2 bg-slate-50 rounded-lg border border-slate-100 max-h-[150px] overflow-y-auto flex flex-wrap gap-1 text-[10px] text-slate-600 font-medium">
+                        {[
+                          "NRP", "Nama", "Position", "POS", "Branch Code", "Region/Div", "Area/Dept",
+                          "Entry Date", "Date of Birth", "Masa Kerja Total", "Masa Kerja Jabatan", "Masa Kerja Cabang",
+                          "HAV", "Last Dev'l Program", "Status Dev'l Program", "Periode Dev'l Program",
+                          "Gol", "KPI Mid Year", "KPI Full Year", "PK 2023", "PK 2024", "PK 2025",
+                          "Link Photo", "Strength 1", "Strength 2", "Areas of Development 1", "Areas of Development 2",
+                          "Level Pendidikan Terakhir", "Institusi Pendidikan Terakhir"
+                        ].map((col) => (
+                          <span key={col} className="bg-white border border-slate-200 px-1.5 py-0.5 rounded shadow-sm">{col}</span>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                <div className="mt-4 pt-2">
+                  <Button
+                    variant="secondary"
+                    className="w-full justify-center gap-2 cursor-pointer font-semibold shadow-sm transition-all duration-200 hover:scale-[1.01] hover:bg-slate-200 h-9"
+                    disabled={downloading.emp}
+                    onClick={() => handleDownloadCsv(generateEmployeeTemplate, "employees_template.csv", "emp")}
+                  >
+                    {downloading.emp ? (
+                      <>
+                        <Loader2 className="w-3.5 h-3.5 animate-spin text-slate-500" />
+                        <span>Preparing...</span>
+                      </>
+                    ) : (
+                      <>
+                        <Download className="w-3.5 h-3.5" />
+                        <span>Download Template</span>
+                      </>
+                    )}
+                  </Button>
+                </div>
+              </div>
+            </Card>
+
+            {/* Card 2: Training Template */}
+            <Card className={getCardContentClasses("rounded-[24px] border border-slate-200 bg-white/70 shadow-sm flex flex-col justify-between overflow-hidden hover:shadow-md transition duration-300")}>
+              <div className="space-y-3 flex-grow flex flex-col justify-between">
+                <div>
+                  <div className="flex items-center justify-between">
+                    <Badge className="font-semibold bg-slate-100 text-slate-700 text-[10px] px-2 py-0.5">CSV</Badge>
+                    <FileSpreadsheet className="text-slate-400 w-5 h-5" />
+                  </div>
+                  <CardTitle className="text-base font-bold text-slate-800 mt-2">Training Template</CardTitle>
+                  <CardDescription className="text-xs text-[var(--muted)] mt-1 min-h-[40px]">
+                    red/Orange development programs template to track historical employee training events.
+                  </CardDescription>
+                </div>
+
+                <div className="space-y-3 mt-2">
+                  <div className="flex flex-wrap gap-2 text-[10px] font-medium text-[var(--muted)] bg-slate-50/50 p-2 rounded-lg border border-slate-100">
+                    <span><strong>7</strong> Columns</span>
+                    <span>•</span>
+                    <span><strong>5</strong> Sample Rows</span>
+                    <span>•</span>
+                    <span className="text-[var(--accent)] font-semibold">Required Fields</span>
+                  </div>
+
+                  <div>
+                    <button
+                      type="button"
+                      onClick={() => setExpandedCard(prev => ({ ...prev, train: !prev.train }))}
+                      className="flex items-center gap-1 text-xs font-semibold text-slate-600 hover:text-slate-800 focus:outline-none"
+                    >
+                      {expandedCard.train ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+                      {expandedCard.train ? "Hide Columns" : "▼ View Columns"}
+                    </button>
+                    {expandedCard.train && (
+                      <div className="mt-2 p-2 bg-slate-50 rounded-lg border border-slate-100 flex flex-wrap gap-1 text-[10px] text-slate-600 font-medium">
+                        {["NRP", "Training Name", "Start Date", "End Date", "Batch", "Period", "Status"].map((col) => (
+                          <span key={col} className="bg-white border border-slate-200 px-1.5 py-0.5 rounded shadow-sm">{col}</span>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                <div className="mt-4 pt-2">
+                  <Button
+                    variant="secondary"
+                    className="w-full justify-center gap-2 cursor-pointer font-semibold shadow-sm transition-all duration-200 hover:scale-[1.01] hover:bg-slate-200 h-9"
+                    disabled={downloading.train}
+                    onClick={() => handleDownloadCsv(generateTrainingTemplate, "training_history_template.csv", "train")}
+                  >
+                    {downloading.train ? (
+                      <>
+                        <Loader2 className="w-3.5 h-3.5 animate-spin text-slate-500" />
+                        <span>Preparing...</span>
+                      </>
+                    ) : (
+                      <>
+                        <Download className="w-3.5 h-3.5" />
+                        <span>Download Template</span>
+                      </>
+                    )}
+                  </Button>
+                </div>
+              </div>
+            </Card>
+
+            {/* Card 3: Work History Template */}
+            <Card className={getCardContentClasses("rounded-[24px] border border-slate-200 bg-white/70 shadow-sm flex flex-col justify-between overflow-hidden hover:shadow-md transition duration-300")}>
+              <div className="space-y-3 flex-grow flex flex-col justify-between">
+                <div>
+                  <div className="flex items-center justify-between">
+                    <Badge className="font-semibold bg-slate-100 text-slate-700 text-[10px] px-2 py-0.5">CSV</Badge>
+                    <FileSpreadsheet className="text-slate-400 w-5 h-5" />
+                  </div>
+                  <CardTitle className="text-base font-bold text-slate-800 mt-2">Work History Template</CardTitle>
+                  <CardDescription className="text-xs text-[var(--muted)] mt-1 min-h-[40px]">
+                    Template for mapping previous employee roles, assignments, branch codes, and durations.
+                  </CardDescription>
+                </div>
+
+                <div className="space-y-3 mt-2">
+                  <div className="flex flex-wrap gap-2 text-[10px] font-medium text-[var(--muted)] bg-slate-50/50 p-2 rounded-lg border border-slate-100">
+                    <span><strong>7</strong> Columns</span>
+                    <span>•</span>
+                    <span><strong>5</strong> Sample Rows</span>
+                    <span>•</span>
+                    <span className="text-[var(--accent)] font-semibold">Required Fields</span>
+                  </div>
+
+                  <div>
+                    <button
+                      type="button"
+                      onClick={() => setExpandedCard(prev => ({ ...prev, work: !prev.work }))}
+                      className="flex items-center gap-1 text-xs font-semibold text-slate-600 hover:text-slate-800 focus:outline-none"
+                    >
+                      {expandedCard.work ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+                      {expandedCard.work ? "Hide Columns" : "▼ View Columns"}
+                    </button>
+                    {expandedCard.work && (
+                      <div className="mt-2 p-2 bg-slate-50 rounded-lg border border-slate-100 flex flex-wrap gap-1 text-[10px] text-slate-600 font-medium">
+                        {["NRP", "Position", "POS", "Branch Code", "Branch Name", "Start Date", "End Date"].map((col) => (
+                          <span key={col} className="bg-white border border-slate-200 px-1.5 py-0.5 rounded shadow-sm">{col}</span>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                <div className="mt-4 pt-2">
+                  <Button
+                    variant="secondary"
+                    className="w-full justify-center gap-2 cursor-pointer font-semibold shadow-sm transition-all duration-200 hover:scale-[1.01] hover:bg-slate-200 h-9"
+                    disabled={downloading.work}
+                    onClick={() => handleDownloadCsv(generateWorkHistoryTemplate, "work_history_template.csv", "work")}
+                  >
+                    {downloading.work ? (
+                      <>
+                        <Loader2 className="w-3.5 h-3.5 animate-spin text-slate-500" />
+                        <span>Preparing...</span>
+                      </>
+                    ) : (
+                      <>
+                        <Download className="w-3.5 h-3.5" />
+                        <span>Download Template</span>
+                      </>
+                    )}
+                  </Button>
+                </div>
+              </div>
+            </Card>
+          </div>
+        </div>
       )}
 
       {/* ── Step content ───────────────────────────────── */}

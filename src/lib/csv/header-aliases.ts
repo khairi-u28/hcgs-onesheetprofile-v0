@@ -36,6 +36,8 @@ export const HEADER_ALIASES = {
   Status: ["Status", "status"],
   Score: ["Score", "score"],
   Category: ["Category", "category"],
+  Batch: ["Batch", "batch", "Angkatan", "Batch/Angkatan"],
+  Period: ["Period", "period", "Periode"],
 
   // Work history specific
   "Start Date": ["Start Date", "StartDate", "Join Date", "Assignment Start"],

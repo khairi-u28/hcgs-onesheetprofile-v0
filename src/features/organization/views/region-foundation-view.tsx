@@ -8,16 +8,12 @@ import { PageHero } from "@/components/shared/page-hero";
 import { usePortalStore } from "@/store/portal-store";
 import { getOrganizationBranches } from "@/lib/organization";
 import { Lightbulb } from "lucide-react";
-import { slugifyRegionName } from "@/lib/utils/slugify";
-
-const pkScoreMap: Record<string, number> = {
-  BS: 5,
-  "B+": 4.5,
-  B: 4,
-  "C+": 3.5,
-  C: 3,
-  K: 2,
-};
+import { slugifyRegionName, slugifyOrganizationName } from "@/lib/utils/slugify";
+import {
+  getMainContentClasses,
+  getCardHeaderClasses,
+  getCardContentClasses,
+} from "@/lib/ui/layout-config";
 
 const DEV_STATUSES = ["Completed", "Ongoing", "Not Started"];
 
@@ -145,7 +141,7 @@ export function RegionFoundationView({ regionId }: { regionId: string }) {
   );
 
   return (
-    <div className="space-y-6">
+    <div className={getMainContentClasses("space-y-6")}>
       <div className="flex items-center gap-2 text-sm text-[var(--muted)]">
         <Link href="/" className="hover:text-foreground">Home</Link>
         <span>›</span>
@@ -158,7 +154,7 @@ export function RegionFoundationView({ regionId }: { regionId: string }) {
         description={`Region-level workforce overview and area comparison for ${targetRegionName}.`}
       />
 
-      <div className="grid gap-4 md:grid-cols-4">
+      <div className="grid gap-4 grid-cols-2 lg:grid-cols-4">
         <SummaryCard label="Employee Count" value={employeeCount} />
         <SummaryCard label="Average KPI" value={formatPercent(averageKpi)} />
         <SummaryCard label="Average HAV" value={formatDecimal(averageHav)} />
@@ -166,13 +162,13 @@ export function RegionFoundationView({ regionId }: { regionId: string }) {
       </div>
 
       <Card className="rounded-[24px] border border-amber-200 bg-amber-50/50 shadow-sm">
-        <CardHeader className="pb-2 border-b border-amber-200/50 px-6 py-4">
+        <CardHeader className={getCardHeaderClasses("pb-2 border-b border-amber-200/50")}>
           <CardTitle className="text-base flex items-center gap-2 text-amber-800">
             <Lightbulb size={18} className="text-amber-600" />
             Region Intelligence Brief
           </CardTitle>
         </CardHeader>
-        <CardContent className="p-6">
+        <CardContent className={getCardContentClasses()}>
           <div className="grid gap-4 md:grid-cols-3">
             <div className="space-y-1">
               <div className="text-xs font-bold uppercase text-amber-700/70 tracking-wider">Lowest KPI Area</div>
@@ -218,14 +214,14 @@ export function RegionFoundationView({ regionId }: { regionId: string }) {
       </div>
 
       <SectionCard title="Area Comparison">
-        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+        <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           {areaSummaries.map((summary) => (
             <Link
               key={summary.area}
-              href={`/areas/${encodeURIComponent(summary.area)}`}
+              href={`/areas/${slugifyOrganizationName(summary.area)}`}
             >
               <Card className="cursor-pointer rounded-[26px] border-[var(--border)] bg-white/80 transition hover:bg-[var(--surface)]">
-                <CardContent className="space-y-3 p-5">
+                <CardContent className={getCardContentClasses("space-y-3")}>
                   <div className="flex items-center justify-between gap-3">
                     <p className="text-base font-semibold">{summary.area}</p>
                     <Badge>{summary.branches.length} branches</Badge>
@@ -254,10 +250,10 @@ function SectionCard({
 }) {
   return (
     <Card className="rounded-[30px] border-[var(--border)] bg-white/90">
-      <CardHeader>
+      <CardHeader className={getCardHeaderClasses()}>
         <CardTitle>{title}</CardTitle>
       </CardHeader>
-      <CardContent>{children}</CardContent>
+      <CardContent className={getCardContentClasses()}>{children}</CardContent>
     </Card>
   );
 }

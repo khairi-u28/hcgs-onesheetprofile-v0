@@ -9,9 +9,16 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { PageHero } from "@/components/shared/page-hero";
 import { usePortalStore } from "@/store/portal-store";
 import { getOrganizationByBranchCode } from "@/lib/organization";
-import { Lightbulb, UserRound, Award, AlertTriangle, Hammer } from "lucide-react";
+import { Lightbulb, Award, AlertTriangle, Hammer } from "lucide-react";
 import { getKpiScore, isPromotionCandidate, isCriticalIntervention, isAttentionRequired, isDevelopmentBacklog } from "@/lib/intelligence";
-import { slugifyRegionName } from "@/lib/utils/slugify";
+import { slugifyRegionName, slugifyOrganizationName } from "@/lib/utils/slugify";
+import {
+  getMainContentClasses,
+  getCardHeaderClasses,
+  getCardContentClasses,
+  getTableTdClasses,
+  getTableThClasses,
+} from "@/lib/ui/layout-config";
 
 const HAV_CATEGORIES = [
   "Strong Performer",
@@ -163,7 +170,7 @@ export function BranchFoundationView({
   const paginatedEmployees = branchEmployees.slice(pageIndex * pageSize, (pageIndex + 1) * pageSize);
 
   return (
-    <div className="space-y-6 pb-10">
+    <div className={getMainContentClasses("space-y-6")}>
       <div className="flex flex-wrap items-center gap-2 text-sm text-[var(--muted)] font-medium">
         <Link href="/" className="hover:text-foreground hover:underline">Home</Link>
         <span>›</span>
@@ -174,7 +181,7 @@ export function BranchFoundationView({
         )}
         <span>›</span>
         {areaId !== "Unknown Area" ? (
-          <Link href={`/areas/${encodeURIComponent(areaId)}`} className="hover:text-foreground hover:underline">{areaId}</Link>
+          <Link href={`/areas/${slugifyOrganizationName(areaId)}`} className="hover:text-foreground hover:underline">{areaId}</Link>
         ) : (
           <span>{areaId}</span>
         )}
@@ -189,7 +196,7 @@ export function BranchFoundationView({
       />
 
       {/* Row 1: Summary Layer */}
-      <div className="grid gap-4 md:grid-cols-4">
+      <div className="grid gap-4 grid-cols-2 lg:grid-cols-4">
         <SummaryCard label="Branch Headcount" value={branchEmployees.length} />
         <SummaryCard label="Average KPI" value={formatPercent(avgKpi)} />
         <SummaryCard label="Average HAV" value={formatDecimal(avgHav)} />
@@ -201,14 +208,14 @@ export function BranchFoundationView({
       </div>
 
       <Card className="rounded-[24px] border border-amber-200 bg-amber-50/50 shadow-sm">
-        <CardHeader className="pb-2 border-b border-amber-200/50 px-6 py-4 flex flex-row items-center justify-between">
+        <CardHeader className={getCardHeaderClasses("pb-2 border-b border-amber-200/50 flex flex-row items-center justify-between")}>
           <CardTitle className="text-base flex items-center gap-2 text-amber-800">
             <Lightbulb size={18} className="text-amber-600" />
             Branch Workforce Intelligence
           </CardTitle>
         </CardHeader>
-        <CardContent className="p-6">
-          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+        <CardContent className={getCardContentClasses()}>
+          <div className="grid gap-6 grid-cols-2 lg:grid-cols-4">
             <div>
               <div className="flex items-center gap-2 text-xs font-bold uppercase text-emerald-700 tracking-wider mb-3">
                 <Award size={14} /> Promotion Candidates
@@ -320,19 +327,19 @@ export function BranchFoundationView({
 
       {/* Row 3: Detail Layer (Workforce Roster) */}
       <Card className="rounded-[30px] border-[var(--border)] bg-white shadow-sm overflow-hidden">
-        <CardHeader className="bg-[var(--surface)] border-b border-[var(--border)] py-4 px-6 flex flex-row items-center justify-between">
+        <CardHeader className={getCardHeaderClasses("bg-[var(--surface)] py-4 flex flex-row items-center justify-between")}>
           <CardTitle className="text-base">Workforce Roster</CardTitle>
           <Badge variant="outline" className="font-semibold border-none bg-slate-100">{branchEmployees.length} Personnel</Badge>
         </CardHeader>
-        <CardContent className="p-0">
+        <CardContent className={getCardContentClasses("p-0")}>
           <div className="overflow-x-auto">
             <table className="w-full min-w-[800px] text-left text-sm">
               <thead className="border-b border-[var(--border)] bg-slate-50/50">
                 <tr>
-                  <th className="px-6 py-3 font-semibold text-[var(--muted)] whitespace-nowrap">NRP</th>
-                  <th className="px-6 py-3 font-semibold text-[var(--muted)]">Personnel</th>
-                  <th className="px-6 py-3 font-semibold text-[var(--muted)] text-right">HAV Category</th>
-                  <th className="px-6 py-3 font-semibold text-[var(--muted)] text-right">KPI Score</th>
+                  <th className={getTableThClasses("whitespace-nowrap")}>NRP</th>
+                  <th className={getTableThClasses()}>Personnel</th>
+                  <th className={getTableThClasses("text-right")}>HAV Category</th>
+                  <th className={getTableThClasses("text-right")}>KPI Score</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-[var(--border)] bg-white">
@@ -342,19 +349,19 @@ export function BranchFoundationView({
                     className="cursor-pointer transition hover:bg-[var(--surface)] group"
                     onClick={() => router.push(`/employees/${employee.nrp}`)}
                   >
-                    <td className="px-6 py-4 font-bold text-slate-700 whitespace-nowrap">{employee.nrp}</td>
-                    <td className="px-6 py-4">
+                    <td className={getTableTdClasses("font-bold text-slate-700 whitespace-nowrap")}>{employee.nrp}</td>
+                    <td className={getTableTdClasses()}>
                       <div className="font-semibold text-foreground group-hover:text-[var(--accent)] transition-colors">{employee.name}</div>
                       <div className="text-xs text-[var(--muted)] mt-0.5">{employee.position}</div>
                     </td>
-                    <td className="px-6 py-4 text-right">
+                    <td className={getTableTdClasses("text-right")}>
                       {employee.havCategory ? (
                         <SemanticBadge category={employee.havCategory} />
                       ) : (
                         <span className="text-[var(--muted)]">—</span>
                       )}
                     </td>
-                    <td className="px-6 py-4 text-right font-medium">
+                    <td className={getTableTdClasses("text-right font-medium")}>
                       {formatPercent(employee.kpiFullYear ?? employee.kpiMidYear)}
                     </td>
                   </tr>
@@ -425,10 +432,10 @@ export function BranchFoundationView({
 function SectionCard({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <Card className="rounded-[24px] border-[var(--border)] bg-white shadow-sm overflow-hidden">
-      <CardHeader className="border-b border-[var(--border)] px-6 py-4 bg-slate-50/30">
+      <CardHeader className={getCardHeaderClasses("bg-slate-50/30")}>
         <CardTitle className="text-sm uppercase tracking-wider text-[var(--muted)]">{title}</CardTitle>
       </CardHeader>
-      <CardContent className="p-6">{children}</CardContent>
+      <CardContent className={getCardContentClasses()}>{children}</CardContent>
     </Card>
   );
 }
@@ -436,7 +443,7 @@ function SectionCard({ title, children }: { title: string; children: React.React
 function SummaryCard({ label, value, subValue }: { label: string; value: number | string; subValue?: string }) {
   return (
     <Card className="rounded-[24px] border-none shadow-sm bg-white overflow-hidden relative">
-      <CardContent className="p-6 relative z-10">
+      <CardContent className={getCardContentClasses("relative z-10")}>
         <div className="text-[11px] font-bold uppercase tracking-[0.18em] text-[var(--muted)] mb-3">
           {label}
         </div>

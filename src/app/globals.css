@@ -75,3 +75,77 @@ select {
     radial-gradient(rgba(22, 32, 42, 0.08) 1px, transparent 1px);
   background-size: 20px 20px;
 }
+
+/* ─── Spacing Tokens & Responsive Layout ────────────────────────────── */
+
+:root {
+  --container-padding: 1.25rem; /* Default compact */
+  --card-header-padding: 0.75rem 1rem;
+  --card-content-padding: 1rem 1.25rem;
+  --table-cell-padding: 0.625rem 1rem;
+  --avatar-size: 6rem;
+}
+
+/* Automatic viewport-based scaling */
+@media (min-width: 1600px) {
+  :root:not(.theme-comfortable):not(.theme-compact):not(.theme-extra-compact) {
+    --container-padding: 2rem;
+    --card-header-padding: 1rem 1.5rem;
+    --card-content-padding: 1.5rem;
+    --table-cell-padding: 0.75rem 1.5rem;
+    --avatar-size: 8rem;
+  }
+}
+
+@media (max-width: 1199px) {
+  :root:not(.theme-comfortable):not(.theme-compact):not(.theme-extra-compact) {
+    --container-padding: 1rem;
+    --card-header-padding: 0.625rem 0.875rem;
+    --card-content-padding: 0.875rem 1rem;
+    --table-cell-padding: 0.5rem 0.875rem;
+    --avatar-size: 5rem;
+  }
+}
+
+/* Manual Theme Overrides */
+.theme-comfortable {
+  --container-padding: 2rem !important;
+  --card-header-padding: 1rem 1.5rem !important;
+  --card-content-padding: 1.5rem !important;
+  --table-cell-padding: 0.75rem 1.5rem !important;
+  --avatar-size: 8rem !important;
+}
+
+.theme-compact {
+  --container-padding: 1.25rem !important;
+  --card-header-padding: 0.75rem 1rem !important;
+  --card-content-padding: 1rem 1.25rem !important;
+  --table-cell-padding: 0.625rem 1rem !important;
+  --avatar-size: 6rem !important;
+}
+
+.theme-extra-compact {
+  --container-padding: 1rem !important;
+  --card-header-padding: 0.625rem 0.875rem !important;
+  --card-content-padding: 0.875rem 1rem !important;
+  --table-cell-padding: 0.5rem 0.875rem !important;
+  --avatar-size: 5rem !important;
+}
+
+/* Spacing classes mapped to layout variables */
+.responsive-container {
+  padding: var(--container-padding);
+}
+
+.responsive-card-header {
+  padding: var(--card-header-padding);
+}
+
+.responsive-card-content {
+  padding: var(--card-content-padding);
+}
+
+.responsive-table-cell {
+  padding: var(--table-cell-padding);
+}
+

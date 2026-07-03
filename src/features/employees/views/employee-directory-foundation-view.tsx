@@ -18,6 +18,13 @@ import { Input } from "@/components/ui/input";
 import { getOrganizationByBranchCode } from "@/lib/organization";
 import { usePortalStore } from "@/store/portal-store";
 import type { EmployeeRecord } from "@/types";
+import {
+  getMainContentClasses,
+  getCardHeaderClasses,
+  getCardContentClasses,
+  getTableTdClasses,
+  getTableThClasses,
+} from "@/lib/ui/layout-config";
 
 const columnHelper = createColumnHelper<EmployeeRecord>();
 
@@ -268,7 +275,7 @@ export function EmployeeDirectoryFoundationView() {
   }, [filters, table]);
 
   return (
-    <div className="space-y-6">
+    <div className={getMainContentClasses("space-y-6")}>
       <PageHero
         eyebrow="Employee Directory"
         title="Search, filter, and review workforce records"
@@ -479,7 +486,7 @@ export function EmployeeDirectoryFoundationView() {
                         {headerGroup.headers.map((header) => (
                           <th
                             key={header.id}
-                            className="whitespace-nowrap border-b border-[var(--border)] px-4 py-3 font-semibold"
+                            className={getTableThClasses("whitespace-nowrap border-b border-[var(--border)] font-semibold")}
                           >
                             {flexRender(
                               header.column.columnDef.header,
@@ -500,7 +507,7 @@ export function EmployeeDirectoryFoundationView() {
                         {row.getVisibleCells().map((cell) => (
                           <td
                             key={cell.id}
-                            className="border-b border-[var(--border)] px-4 py-3 align-middle"
+                            className={getTableTdClasses("border-b border-[var(--border)] align-middle")}
                           >
                             {flexRender(
                               cell.column.columnDef.cell,

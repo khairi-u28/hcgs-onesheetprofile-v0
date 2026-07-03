@@ -5,34 +5,13 @@ import { normalizeDateValue } from "@/lib/utils";
 const trainingCsvRowSchema = z.object({
   NRP: z.string().trim().min(1, "NRP is required").transform((val) => val.toUpperCase()),
   "Training Name": z.string().trim().min(1, "Training Name is required"),
+  "Start Date": z.string().trim().default(""),
+  "End Date": z.string().trim().default(""),
   "Completion Date": z.string().trim().default(""),
+  Batch: z.string().trim().default(""),
+  Period: z.string().trim().default(""),
   Status: z.string().trim().default(""),
-  Score: z.string().trim().optional(),
-  Category: z.string().trim().optional(),
 });
-
-function normalizeScore(value: string, warnings: string[], richWarnings?: any[]) {
-  const raw = value.trim();
-  if (!raw) {
-    return null;
-  }
-
-  const score = Number(raw);
-  if (Number.isNaN(score)) {
-    const msg = `Invalid training score: ${value}`;
-    warnings.push(msg);
-    if (richWarnings) {
-      richWarnings.push({
-        message: msg,
-        code: "INVALID_SCORE",
-        currentValue: value,
-      });
-    }
-    return null;
-  }
-
-  return score;
-}
 
 export function validateTrainingCsvRow(
   row: Record<string, string>,
@@ -63,26 +42,48 @@ export function validateTrainingCsvRow(
     });
   }
 
+  const rawEndDate = parsed["End Date"].trim();
+  const rawCompletionDate = parsed["Completion Date"].trim();
+
+  let finalEndDate: string | null = null;
+  let finalCompletionDate: string | null = null;
+
+  if (rawEndDate) {
+    finalEndDate = normalizeDateValue(rawEndDate, warnings, "End Date", richWarnings);
+  }
+  if (rawCompletionDate) {
+    finalCompletionDate = normalizeDateValue(rawCompletionDate, warnings, "Completion Date", richWarnings);
+  }
+
+  // Fallbacks for priority mapping
+  if (!finalEndDate && finalCompletionDate) {
+    finalEndDate = finalCompletionDate;
+  }
+  if (!finalCompletionDate && finalEndDate) {
+    finalCompletionDate = finalEndDate;
+  }
+
   const statusRaw = parsed.Status.trim();
-  const COMPLETED_ALIASES = new Set(["COMPLETED", "COMPLETED TRAINING", "FINISHED", "DONE", "COMPLETE"]);
-  
   let finalStatus: string | null = null;
   let rawStatus: string | undefined = undefined;
 
   if (statusRaw) {
-    const upperStatus = statusRaw.toUpperCase();
-    if (COMPLETED_ALIASES.has(upperStatus)) {
+    const upper = statusRaw.toUpperCase();
+    const COMPLETED_ALIASES = ["COMPLETED", "COMPLETED TRAINING", "FINISHED", "DONE", "COMPLETE", "LULUS", "LULUS - CERTIFICATE"];
+    const ONGOING_ALIASES = ["ONGOING", "ON GOING", "DALAM PROSES"];
+
+    if (COMPLETED_ALIASES.includes(upper)) {
       finalStatus = "Completed";
-    } else if (upperStatus === "ON GOING" || upperStatus === "ONGOING") {
+    } else if (ONGOING_ALIASES.includes(upper)) {
       finalStatus = "On Going";
-    } else if (upperStatus === "PROMOTED") {
+    } else if (upper === "PROMOTED") {
       finalStatus = "Promoted";
-    } else if (upperStatus === "POOL OF CADRE" || upperStatus === "POOLOF_CADRE") {
+    } else if (upper === "POOL OF CADRE" || upper === "POOLOF_CADRE") {
       finalStatus = "Pool of Cadre";
-    } else if (upperStatus === "FAILED") {
+    } else if (upper === "FAILED") {
       finalStatus = "Failed";
     } else {
-      finalStatus = null;
+      finalStatus = statusRaw;
       rawStatus = statusRaw;
       const msg = `Unknown training status: ${statusRaw}`;
       warnings.push(msg);
@@ -97,11 +98,13 @@ export function validateTrainingCsvRow(
   const trainingRecord: TrainingHistoryRecord = {
     employeeNrp: parsed.NRP,
     trainingName: parsed["Training Name"],
-    completionDate: normalizeDateValue(parsed["Completion Date"], warnings, "Completion Date", richWarnings),
+    startDate: parsed["Start Date"].trim() ? normalizeDateValue(parsed["Start Date"], warnings, "Start Date", richWarnings) : null,
+    endDate: finalEndDate,
+    completionDate: finalCompletionDate,
+    batch: parsed.Batch || undefined,
+    period: parsed.Period || undefined,
     status: finalStatus,
     rawStatus,
-    score: parsed.Score ? normalizeScore(parsed.Score, warnings, richWarnings) : null,
-    category: parsed.Category || undefined,
   };
 
   return { data: trainingRecord, warnings, richWarnings };

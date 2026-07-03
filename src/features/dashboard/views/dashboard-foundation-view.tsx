@@ -9,6 +9,11 @@ import { usePortalStore } from "@/store/portal-store";
 import { getOrganizationBranches } from "@/lib/organization";
 import { Users, AlertTriangle, Target, TrendingUp, ChevronRight, Lightbulb } from "lucide-react";
 import { slugifyRegionName } from "@/lib/utils/slugify";
+import {
+  getMainContentClasses,
+  getCardHeaderClasses,
+  getCardContentClasses,
+} from "@/lib/ui/layout-config";
 
 const HAV_CATEGORIES = [
   "Strong Performer",
@@ -165,7 +170,7 @@ export function DashboardFoundationView() {
   }, [branchSummaries]);
 
   return (
-    <div className="space-y-8 pb-10">
+    <div className={getMainContentClasses("space-y-8 pb-10")}>
       <div className="flex items-center justify-between">
         <PageHero
           eyebrow="Workforce Intelligence"
@@ -175,12 +180,12 @@ export function DashboardFoundationView() {
       </div>
 
       {/* Row 1: Summary Layer (Executive Pulse) */}
-      <div className="grid gap-4 md:grid-cols-4">
+      <div className="grid gap-4 grid-cols-2 lg:grid-cols-4">
         <Card className="rounded-[24px] border-none shadow-sm bg-white overflow-hidden relative">
           <div className="absolute right-[-20px] top-[20px] text-blue-50/50">
             <Users size={120} strokeWidth={1} />
           </div>
-          <CardContent className="p-6 relative z-10">
+          <CardContent className={getCardContentClasses("relative z-10")}>
             <div className="flex items-center gap-2 text-sm font-semibold text-blue-600 mb-2 uppercase tracking-wider">
               <Users size={16} /> Total Headcount
             </div>
@@ -190,7 +195,7 @@ export function DashboardFoundationView() {
         </Card>
 
         <Card className="rounded-[24px] border-none shadow-sm bg-white overflow-hidden relative">
-          <CardContent className="p-6 relative z-10 h-full flex flex-col justify-between">
+          <CardContent className={getCardContentClasses("relative z-10 h-full flex flex-col justify-between")}>
             <div>
               <div className="flex items-center gap-2 text-sm font-semibold text-emerald-600 mb-2 uppercase tracking-wider">
                 <Target size={16} /> National KPI
@@ -204,7 +209,7 @@ export function DashboardFoundationView() {
         </Card>
 
         <Card className="rounded-[24px] border-none shadow-sm bg-white overflow-hidden relative">
-          <CardContent className="p-6 relative z-10 h-full flex flex-col justify-between">
+          <CardContent className={getCardContentClasses("relative z-10 h-full flex flex-col justify-between")}>
             <div>
               <div className="flex items-center gap-2 text-sm font-semibold text-indigo-600 mb-2 uppercase tracking-wider">
                 <TrendingUp size={16} /> National HAV
@@ -218,7 +223,7 @@ export function DashboardFoundationView() {
         </Card>
 
         <Card className="rounded-[24px] border border-red-200 shadow-sm bg-red-50/50 overflow-hidden relative">
-          <CardContent className="p-6 relative z-10 h-full flex flex-col justify-between">
+          <CardContent className={getCardContentClasses("relative z-10 h-full flex flex-col justify-between")}>
             <div>
               <div className="flex items-center gap-2 text-sm font-semibold text-red-600 mb-2 uppercase tracking-wider">
                 <AlertTriangle size={16} /> Critical Risk Index
@@ -234,14 +239,14 @@ export function DashboardFoundationView() {
 
       {/* Intelligence Brief */}
       <Card className="rounded-[24px] border border-amber-200 bg-amber-50/50 shadow-sm">
-        <CardHeader className="pb-2 border-b border-amber-200/50 px-6 py-4">
+        <CardHeader className={getCardHeaderClasses("pb-2 border-b border-amber-200/50")}>
           <CardTitle className="text-base flex items-center gap-2 text-amber-800">
             <Lightbulb size={18} className="text-amber-600" />
             Intelligence Brief
           </CardTitle>
         </CardHeader>
-        <CardContent className="p-6">
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        <CardContent className={getCardContentClasses()}>
+          <div className="grid gap-4 grid-cols-2 lg:grid-cols-4">
             <div className="space-y-1">
               <div className="text-xs font-bold uppercase text-amber-700/70 tracking-wider">Lowest KPI Region</div>
               <div className="font-semibold text-slate-800">{intelligence.lowestKpiRegion?.regionId ?? "--"}</div>
@@ -269,13 +274,13 @@ export function DashboardFoundationView() {
       {/* Row 2: Visualization & Insight Layer */}
       <div className="grid gap-6 xl:grid-cols-[1fr_1.5fr]">
         <Card className="rounded-[24px] border border-[var(--border)] shadow-sm bg-white">
-          <CardHeader className="pb-2 border-b border-[var(--border)] px-6 py-4">
+          <CardHeader className={getCardHeaderClasses("pb-2")}>
             <CardTitle className="text-base flex items-center gap-2">
               <AlertTriangle className="text-amber-500" size={18} />
               Intervention Radar (Bottom 5 Branches)
             </CardTitle>
           </CardHeader>
-          <CardContent className="p-0">
+          <CardContent className={getCardContentClasses("p-0")}>
             <div className="divide-y divide-[var(--border)]">
               {bottomBranches.map((branch, i) => (
                 <Link
@@ -308,10 +313,10 @@ export function DashboardFoundationView() {
         </Card>
 
         <Card className="rounded-[24px] border border-[var(--border)] shadow-sm bg-white">
-          <CardHeader className="pb-2 border-b border-[var(--border)] px-6 py-4">
+          <CardHeader className={getCardHeaderClasses("pb-2")}>
             <CardTitle className="text-base">National Talent Pipeline</CardTitle>
           </CardHeader>
-          <CardContent className="p-6">
+          <CardContent className={getCardContentClasses()}>
             <div className="mb-6">
               <StackedBar items={havMix} total={employees.length} />
             </div>
@@ -334,14 +339,14 @@ export function DashboardFoundationView() {
       {/* Row 3: Detail Layer (Territory Heatmap) */}
       <div>
         <h2 className="mb-4 text-lg font-bold tracking-tight">Territory Heatmap (Region Comparison)</h2>
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+        <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 xl:grid-cols-4">
           {regionSummaries.map((region) => (
             <Link
               key={region.regionId}
               href={`/regions/${slugifyRegionName(region.regionId)}`}
             >
               <Card className="cursor-pointer rounded-[20px] border-[var(--border)] bg-white transition-all hover:border-[var(--accent)] hover:shadow-md">
-                <CardContent className="p-5">
+                <CardContent className={getCardContentClasses()}>
                   <div className="flex items-center justify-between mb-4">
                     <p className="font-bold text-base truncate pr-2">{region.regionId}</p>
                     <Badge variant="outline" className="font-semibold">{region.employeeCount} HC</Badge>

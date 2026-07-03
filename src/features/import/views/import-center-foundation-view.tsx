@@ -91,10 +91,7 @@ type ImportCandidate<T> = {
 
 type WizardStep = 1 | 2 | 3 | 4 | 5;
 
-const STEP_META: Record<
-  WizardStep,
-  { label: string; description: string }
-> = {
+const STEP_META: Record<WizardStep, { label: string; description: string }> = {
   1: {
     label: "Employee Dataset",
     description: "Upload and validate your employee master data",
@@ -147,9 +144,13 @@ export function ImportCenterFoundationView() {
   const [downloading, setDownloading] = useState<Record<string, boolean>>({});
   const [expandedCard, setExpandedCard] = useState<Record<string, boolean>>({});
 
-  const handleDownloadCsv = async (generator: () => string, fileName: string, key: string) => {
+  const handleDownloadCsv = async (
+    generator: () => string,
+    fileName: string,
+    key: string,
+  ) => {
     if (downloading[key]) return;
-    setDownloading(prev => ({ ...prev, [key]: true }));
+    setDownloading((prev) => ({ ...prev, [key]: true }));
     const startTime = Date.now();
 
     try {
@@ -162,16 +163,17 @@ export function ImportCenterFoundationView() {
     const elapsed = Date.now() - startTime;
     const remainingTime = 800 - elapsed;
     if (remainingTime > 0) {
-      await new Promise(resolve => setTimeout(resolve, remainingTime));
+      await new Promise((resolve) => setTimeout(resolve, remainingTime));
     }
-    setDownloading(prev => ({ ...prev, [key]: false }));
+    setDownloading((prev) => ({ ...prev, [key]: false }));
   };
 
   // Allow the wizard to stay on a completed step to see results,
   // but never let it go ahead of resolvedStep (unless step 4→5 CTA)
-  const activeStep = currentStep <= resolvedStep || currentStep === 5
-    ? currentStep
-    : resolvedStep;
+  const activeStep =
+    currentStep <= resolvedStep || currentStep === 5
+      ? currentStep
+      : resolvedStep;
 
   /* ── CSV local state ── */
   const [employeeCandidate, setEmployeeCandidate] =
@@ -352,8 +354,12 @@ export function ImportCenterFoundationView() {
       importedAt: new Date().toISOString(),
       fileName: employeeCandidate.fileName,
       recordCount: employeeCandidate.parsedData.length,
-      warnings: employeeCandidate.issues.filter((issue) => issue.type === "warning"),
-      errors: employeeCandidate.issues.filter((issue) => issue.type === "error" || !issue.type),
+      warnings: employeeCandidate.issues.filter(
+        (issue) => issue.type === "warning",
+      ),
+      errors: employeeCandidate.issues.filter(
+        (issue) => issue.type === "error" || !issue.type,
+      ),
     };
     replaceEmployees(employeeCandidate.parsedData, meta);
     setEmployeeCandidate(null);
@@ -385,8 +391,12 @@ export function ImportCenterFoundationView() {
       importedAt: new Date().toISOString(),
       fileName: trainingCandidate.fileName,
       recordCount: trainingCandidate.parsedData.length,
-      warnings: trainingCandidate.issues.filter((issue) => issue.type === "warning"),
-      errors: trainingCandidate.issues.filter((issue) => issue.type === "error" || !issue.type),
+      warnings: trainingCandidate.issues.filter(
+        (issue) => issue.type === "warning",
+      ),
+      errors: trainingCandidate.issues.filter(
+        (issue) => issue.type === "error" || !issue.type,
+      ),
     };
     replaceTrainingHistory(trainingCandidate.parsedData, meta);
     setTrainingCandidate(null);
@@ -394,7 +404,12 @@ export function ImportCenterFoundationView() {
   }
 
   function importTraining() {
-    if (!trainingCandidate || trainingCandidate.parsedData.length === 0 || employees.length === 0) return;
+    if (
+      !trainingCandidate ||
+      trainingCandidate.parsedData.length === 0 ||
+      employees.length === 0
+    )
+      return;
 
     if (trainingCandidate.summary.invalidRecords > 0) {
       setConfirmationModal({
@@ -416,8 +431,12 @@ export function ImportCenterFoundationView() {
       importedAt: new Date().toISOString(),
       fileName: workHistoryCandidate.fileName,
       recordCount: workHistoryCandidate.parsedData.length,
-      warnings: workHistoryCandidate.issues.filter((issue) => issue.type === "warning"),
-      errors: workHistoryCandidate.issues.filter((issue) => issue.type === "error" || !issue.type),
+      warnings: workHistoryCandidate.issues.filter(
+        (issue) => issue.type === "warning",
+      ),
+      errors: workHistoryCandidate.issues.filter(
+        (issue) => issue.type === "error" || !issue.type,
+      ),
     };
     replaceWorkHistory(workHistoryCandidate.parsedData, meta);
     setWorkHistoryCandidate(null);
@@ -425,7 +444,12 @@ export function ImportCenterFoundationView() {
   }
 
   function importWorkHistory() {
-    if (!workHistoryCandidate || workHistoryCandidate.parsedData.length === 0 || employees.length === 0) return;
+    if (
+      !workHistoryCandidate ||
+      workHistoryCandidate.parsedData.length === 0 ||
+      employees.length === 0
+    )
+      return;
 
     if (workHistoryCandidate.summary.invalidRecords > 0) {
       setConfirmationModal({
@@ -474,7 +498,10 @@ export function ImportCenterFoundationView() {
     1: employees.length > 0,
     2: !!dataset.trainingImport,
     3: !!dataset.workHistoryImport,
-    4: employees.length > 0 && !!dataset.trainingImport && !!dataset.workHistoryImport,
+    4:
+      employees.length > 0 &&
+      !!dataset.trainingImport &&
+      !!dataset.workHistoryImport,
     5: false,
   };
 
@@ -509,11 +536,16 @@ export function ImportCenterFoundationView() {
               <button
                 type="button"
                 onClick={() => {
-                  if (step <= resolvedStep || (step === 5 && stepCompleted[4])) {
+                  if (
+                    step <= resolvedStep ||
+                    (step === 5 && stepCompleted[4])
+                  ) {
                     setCurrentStep(step);
                   }
                 }}
-                disabled={step > resolvedStep && !(step === 5 && stepCompleted[4])}
+                disabled={
+                  step > resolvedStep && !(step === 5 && stepCompleted[4])
+                }
                 className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-sm font-semibold transition-all duration-200 ${
                   stepCompleted[step]
                     ? "bg-emerald-600 text-white"
@@ -558,56 +590,108 @@ export function ImportCenterFoundationView() {
       {activeStep <= 3 && (
         <div className="space-y-4 my-6">
           <div className="border-l-4 border-[var(--accent)] pl-3">
-            <h2 className="text-base font-bold text-slate-800 tracking-tight">Download CSV Templates</h2>
+            <h2 className="text-base font-bold text-slate-800 tracking-tight">
+              Download CSV Templates
+            </h2>
             <p className="text-xs text-[var(--muted)] mt-0.5">
-              Download starter templates with correct columns and pre-filled sample rows to prepare your datasets.
+              Download starter templates with correct columns and pre-filled
+              sample rows to prepare your datasets.
             </p>
           </div>
-          
+
           <div className="grid gap-6 md:grid-cols-3">
             {/* Card 1: Employee Template */}
-            <Card className={getCardContentClasses("rounded-[24px] border border-slate-200 bg-white/70 shadow-sm flex flex-col justify-between overflow-hidden hover:shadow-md transition duration-300")}>
+            <Card
+              className={getCardContentClasses(
+                "rounded-[24px] border border-slate-200 bg-white/70 shadow-sm flex flex-col justify-between overflow-hidden hover:shadow-md transition duration-300",
+              )}
+            >
               <div className="space-y-3 flex-grow flex flex-col justify-between">
                 <div>
                   <div className="flex items-center justify-between">
-                    <Badge className="font-semibold bg-slate-100 text-slate-700 text-[10px] px-2 py-0.5">CSV</Badge>
+                    <Badge className="font-semibold bg-slate-100 text-slate-700 text-[10px] px-2 py-0.5">
+                      CSV
+                    </Badge>
                     <FileSpreadsheet className="text-slate-400 w-5 h-5" />
                   </div>
-                  <CardTitle className="text-base font-bold text-slate-800 mt-2">Employee Template</CardTitle>
+                  <CardTitle className="text-base font-bold text-slate-800 mt-2">
+                    Employee Template
+                  </CardTitle>
                   <CardDescription className="text-xs text-[var(--muted)] mt-1 min-h-[40px]">
-                    Master employee database template containing all demographic, role, performance, and education fields.
+                    Master employee database template containing all
+                    demographic, role, performance, and education fields.
                   </CardDescription>
                 </div>
 
                 <div className="space-y-3 mt-2">
                   <div className="flex flex-wrap gap-2 text-[10px] font-medium text-[var(--muted)] bg-slate-50/50 p-2 rounded-lg border border-slate-100">
-                    <span><strong>29</strong> Columns</span>
+                    <span>
+                      <strong>29</strong> Columns
+                    </span>
                     <span>•</span>
-                    <span><strong>5</strong> Sample Rows</span>
+                    <span>
+                      <strong>5</strong> Sample Rows
+                    </span>
                     <span>•</span>
-                    <span className="text-[var(--accent)] font-semibold">Required Fields</span>
+                    <span className="text-[var(--accent)] font-semibold">
+                      Required Fields
+                    </span>
                   </div>
 
                   <div>
                     <button
                       type="button"
-                      onClick={() => setExpandedCard(prev => ({ ...prev, emp: !prev.emp }))}
+                      onClick={() =>
+                        setExpandedCard((prev) => ({ ...prev, emp: !prev.emp }))
+                      }
                       className="flex items-center gap-1 text-xs font-semibold text-slate-600 hover:text-slate-800 focus:outline-none"
                     >
-                      {expandedCard.emp ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
-                      {expandedCard.emp ? "Hide Columns" : "▼ View Columns"}
+                      {expandedCard.emp ? (
+                        <ChevronUp className="w-3.5 h-3.5" />
+                      ) : (
+                        <ChevronDown className="w-3.5 h-3.5" />
+                      )}
+                      {expandedCard.emp ? "Hide Columns" : "View Columns"}
                     </button>
                     {expandedCard.emp && (
                       <div className="mt-2 p-2 bg-slate-50 rounded-lg border border-slate-100 max-h-[150px] overflow-y-auto flex flex-wrap gap-1 text-[10px] text-slate-600 font-medium">
                         {[
-                          "NRP", "Nama", "Position", "POS", "Branch Code", "Region/Div", "Area/Dept",
-                          "Entry Date", "Date of Birth", "Masa Kerja Total", "Masa Kerja Jabatan", "Masa Kerja Cabang",
-                          "HAV", "Last Dev'l Program", "Status Dev'l Program", "Periode Dev'l Program",
-                          "Gol", "KPI Mid Year", "KPI Full Year", "PK 2023", "PK 2024", "PK 2025",
-                          "Link Photo", "Strength 1", "Strength 2", "Areas of Development 1", "Areas of Development 2",
-                          "Level Pendidikan Terakhir", "Institusi Pendidikan Terakhir"
+                          "NRP",
+                          "Nama",
+                          "Position",
+                          "POS",
+                          "Branch Code",
+                          "Region/Div",
+                          "Area/Dept",
+                          "Entry Date",
+                          "Date of Birth",
+                          "Masa Kerja Total",
+                          "Masa Kerja Jabatan",
+                          "Masa Kerja Cabang",
+                          "HAV",
+                          "Last Dev'l Program",
+                          "Status Dev'l Program",
+                          "Periode Dev'l Program",
+                          "Gol",
+                          "KPI Mid Year",
+                          "KPI Full Year",
+                          "PK 2023",
+                          "PK 2024",
+                          "PK 2025",
+                          "Link Photo",
+                          "Strength 1",
+                          "Strength 2",
+                          "Areas of Development 1",
+                          "Areas of Development 2",
+                          "Level Pendidikan Terakhir",
+                          "Institusi Pendidikan Terakhir",
                         ].map((col) => (
-                          <span key={col} className="bg-white border border-slate-200 px-1.5 py-0.5 rounded shadow-sm">{col}</span>
+                          <span
+                            key={col}
+                            className="bg-white border border-slate-200 px-1.5 py-0.5 rounded shadow-sm"
+                          >
+                            {col}
+                          </span>
                         ))}
                       </div>
                     )}
@@ -619,7 +703,13 @@ export function ImportCenterFoundationView() {
                     variant="secondary"
                     className="w-full justify-center gap-2 cursor-pointer font-semibold shadow-sm transition-all duration-200 hover:scale-[1.01] hover:bg-slate-200 h-9"
                     disabled={downloading.emp}
-                    onClick={() => handleDownloadCsv(generateEmployeeTemplate, "employees_template.csv", "emp")}
+                    onClick={() =>
+                      handleDownloadCsv(
+                        generateEmployeeTemplate,
+                        "employees_template.csv",
+                        "emp",
+                      )
+                    }
                   >
                     {downloading.emp ? (
                       <>
@@ -638,41 +728,78 @@ export function ImportCenterFoundationView() {
             </Card>
 
             {/* Card 2: Training Template */}
-            <Card className={getCardContentClasses("rounded-[24px] border border-slate-200 bg-white/70 shadow-sm flex flex-col justify-between overflow-hidden hover:shadow-md transition duration-300")}>
+            <Card
+              className={getCardContentClasses(
+                "rounded-[24px] border border-slate-200 bg-white/70 shadow-sm flex flex-col justify-between overflow-hidden hover:shadow-md transition duration-300",
+              )}
+            >
               <div className="space-y-3 flex-grow flex flex-col justify-between">
                 <div>
                   <div className="flex items-center justify-between">
-                    <Badge className="font-semibold bg-slate-100 text-slate-700 text-[10px] px-2 py-0.5">CSV</Badge>
+                    <Badge className="font-semibold bg-slate-100 text-slate-700 text-[10px] px-2 py-0.5">
+                      CSV
+                    </Badge>
                     <FileSpreadsheet className="text-slate-400 w-5 h-5" />
                   </div>
-                  <CardTitle className="text-base font-bold text-slate-800 mt-2">Training Template</CardTitle>
+                  <CardTitle className="text-base font-bold text-slate-800 mt-2">
+                    Training Template
+                  </CardTitle>
                   <CardDescription className="text-xs text-[var(--muted)] mt-1 min-h-[40px]">
-                    red/Orange development programs template to track historical employee training events.
+                    red/Orange development programs template to track historical
+                    employee training events.
                   </CardDescription>
                 </div>
 
                 <div className="space-y-3 mt-2">
                   <div className="flex flex-wrap gap-2 text-[10px] font-medium text-[var(--muted)] bg-slate-50/50 p-2 rounded-lg border border-slate-100">
-                    <span><strong>7</strong> Columns</span>
+                    <span>
+                      <strong>7</strong> Columns
+                    </span>
                     <span>•</span>
-                    <span><strong>5</strong> Sample Rows</span>
+                    <span>
+                      <strong>5</strong> Sample Rows
+                    </span>
                     <span>•</span>
-                    <span className="text-[var(--accent)] font-semibold">Required Fields</span>
+                    <span className="text-[var(--accent)] font-semibold">
+                      Required Fields
+                    </span>
                   </div>
 
                   <div>
                     <button
                       type="button"
-                      onClick={() => setExpandedCard(prev => ({ ...prev, train: !prev.train }))}
+                      onClick={() =>
+                        setExpandedCard((prev) => ({
+                          ...prev,
+                          train: !prev.train,
+                        }))
+                      }
                       className="flex items-center gap-1 text-xs font-semibold text-slate-600 hover:text-slate-800 focus:outline-none"
                     >
-                      {expandedCard.train ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
-                      {expandedCard.train ? "Hide Columns" : "▼ View Columns"}
+                      {expandedCard.train ? (
+                        <ChevronUp className="w-3.5 h-3.5" />
+                      ) : (
+                        <ChevronDown className="w-3.5 h-3.5" />
+                      )}
+                      {expandedCard.train ? "Hide Columns" : "View Columns"}
                     </button>
                     {expandedCard.train && (
                       <div className="mt-2 p-2 bg-slate-50 rounded-lg border border-slate-100 flex flex-wrap gap-1 text-[10px] text-slate-600 font-medium">
-                        {["NRP", "Training Name", "Start Date", "End Date", "Batch", "Period", "Status"].map((col) => (
-                          <span key={col} className="bg-white border border-slate-200 px-1.5 py-0.5 rounded shadow-sm">{col}</span>
+                        {[
+                          "NRP",
+                          "Training Name",
+                          "Start Date",
+                          "End Date",
+                          "Batch",
+                          "Period",
+                          "Status",
+                        ].map((col) => (
+                          <span
+                            key={col}
+                            className="bg-white border border-slate-200 px-1.5 py-0.5 rounded shadow-sm"
+                          >
+                            {col}
+                          </span>
                         ))}
                       </div>
                     )}
@@ -684,7 +811,13 @@ export function ImportCenterFoundationView() {
                     variant="secondary"
                     className="w-full justify-center gap-2 cursor-pointer font-semibold shadow-sm transition-all duration-200 hover:scale-[1.01] hover:bg-slate-200 h-9"
                     disabled={downloading.train}
-                    onClick={() => handleDownloadCsv(generateTrainingTemplate, "training_history_template.csv", "train")}
+                    onClick={() =>
+                      handleDownloadCsv(
+                        generateTrainingTemplate,
+                        "training_history_template.csv",
+                        "train",
+                      )
+                    }
                   >
                     {downloading.train ? (
                       <>
@@ -703,41 +836,78 @@ export function ImportCenterFoundationView() {
             </Card>
 
             {/* Card 3: Work History Template */}
-            <Card className={getCardContentClasses("rounded-[24px] border border-slate-200 bg-white/70 shadow-sm flex flex-col justify-between overflow-hidden hover:shadow-md transition duration-300")}>
+            <Card
+              className={getCardContentClasses(
+                "rounded-[24px] border border-slate-200 bg-white/70 shadow-sm flex flex-col justify-between overflow-hidden hover:shadow-md transition duration-300",
+              )}
+            >
               <div className="space-y-3 flex-grow flex flex-col justify-between">
                 <div>
                   <div className="flex items-center justify-between">
-                    <Badge className="font-semibold bg-slate-100 text-slate-700 text-[10px] px-2 py-0.5">CSV</Badge>
+                    <Badge className="font-semibold bg-slate-100 text-slate-700 text-[10px] px-2 py-0.5">
+                      CSV
+                    </Badge>
                     <FileSpreadsheet className="text-slate-400 w-5 h-5" />
                   </div>
-                  <CardTitle className="text-base font-bold text-slate-800 mt-2">Work History Template</CardTitle>
+                  <CardTitle className="text-base font-bold text-slate-800 mt-2">
+                    Work History Template
+                  </CardTitle>
                   <CardDescription className="text-xs text-[var(--muted)] mt-1 min-h-[40px]">
-                    Template for mapping previous employee roles, assignments, branch codes, and durations.
+                    Template for mapping previous employee roles, assignments,
+                    branch codes, and durations.
                   </CardDescription>
                 </div>
 
                 <div className="space-y-3 mt-2">
                   <div className="flex flex-wrap gap-2 text-[10px] font-medium text-[var(--muted)] bg-slate-50/50 p-2 rounded-lg border border-slate-100">
-                    <span><strong>7</strong> Columns</span>
+                    <span>
+                      <strong>7</strong> Columns
+                    </span>
                     <span>•</span>
-                    <span><strong>5</strong> Sample Rows</span>
+                    <span>
+                      <strong>5</strong> Sample Rows
+                    </span>
                     <span>•</span>
-                    <span className="text-[var(--accent)] font-semibold">Required Fields</span>
+                    <span className="text-[var(--accent)] font-semibold">
+                      Required Fields
+                    </span>
                   </div>
 
                   <div>
                     <button
                       type="button"
-                      onClick={() => setExpandedCard(prev => ({ ...prev, work: !prev.work }))}
+                      onClick={() =>
+                        setExpandedCard((prev) => ({
+                          ...prev,
+                          work: !prev.work,
+                        }))
+                      }
                       className="flex items-center gap-1 text-xs font-semibold text-slate-600 hover:text-slate-800 focus:outline-none"
                     >
-                      {expandedCard.work ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
-                      {expandedCard.work ? "Hide Columns" : "▼ View Columns"}
+                      {expandedCard.work ? (
+                        <ChevronUp className="w-3.5 h-3.5" />
+                      ) : (
+                        <ChevronDown className="w-3.5 h-3.5" />
+                      )}
+                      {expandedCard.work ? "Hide Columns" : "View Columns"}
                     </button>
                     {expandedCard.work && (
                       <div className="mt-2 p-2 bg-slate-50 rounded-lg border border-slate-100 flex flex-wrap gap-1 text-[10px] text-slate-600 font-medium">
-                        {["NRP", "Position", "POS", "Branch Code", "Branch Name", "Start Date", "End Date"].map((col) => (
-                          <span key={col} className="bg-white border border-slate-200 px-1.5 py-0.5 rounded shadow-sm">{col}</span>
+                        {[
+                          "NRP",
+                          "Position",
+                          "POS",
+                          "Branch Code",
+                          "Branch Name",
+                          "Start Date",
+                          "End Date",
+                        ].map((col) => (
+                          <span
+                            key={col}
+                            className="bg-white border border-slate-200 px-1.5 py-0.5 rounded shadow-sm"
+                          >
+                            {col}
+                          </span>
                         ))}
                       </div>
                     )}
@@ -749,7 +919,13 @@ export function ImportCenterFoundationView() {
                     variant="secondary"
                     className="w-full justify-center gap-2 cursor-pointer font-semibold shadow-sm transition-all duration-200 hover:scale-[1.01] hover:bg-slate-200 h-9"
                     disabled={downloading.work}
-                    onClick={() => handleDownloadCsv(generateWorkHistoryTemplate, "work_history_template.csv", "work")}
+                    onClick={() =>
+                      handleDownloadCsv(
+                        generateWorkHistoryTemplate,
+                        "work_history_template.csv",
+                        "work",
+                      )
+                    }
                   >
                     {downloading.work ? (
                       <>
@@ -901,7 +1077,9 @@ function WizardUploadStep<T>({
   badgeLabel: string;
   inputId: string;
   isParsing: boolean;
-  onFileSelection: (event: React.ChangeEvent<HTMLInputElement>) => Promise<void>;
+  onFileSelection: (
+    event: React.ChangeEvent<HTMLInputElement>,
+  ) => Promise<void>;
   candidate: ImportCandidate<T> | null;
   errorMessage: string | null;
   onImport: () => void;
@@ -964,12 +1142,17 @@ function WizardUploadStep<T>({
           <div className="rounded-[22px] border border-[var(--border)] bg-[var(--surface)] p-4 text-sm">
             <div className="flex items-center justify-between flex-wrap gap-4">
               <div>
-                <p className="font-semibold text-slate-800">Required Datasets</p>
+                <p className="font-semibold text-slate-800">
+                  Required Datasets
+                </p>
                 <p className="text-xs text-[var(--muted)] mt-1">
-                  Required columns: <span className="font-medium text-slate-700">
-                    {kind === "employees" ? "NRP, Nama, HAV" :
-                     kind === "training" ? "NRP, Training Name" :
-                     "NRP, Position, Start Date"}
+                  Required columns:{" "}
+                  <span className="font-medium text-slate-700">
+                    {kind === "employees"
+                      ? "NRP, Nama, HAV"
+                      : kind === "training"
+                        ? "NRP, Training Name"
+                        : "NRP, Position, Start Date"}
                   </span>
                 </p>
               </div>
@@ -977,9 +1160,21 @@ function WizardUploadStep<T>({
                 variant="ghost"
                 size="sm"
                 onClick={() => {
-                  if (kind === "employees") downloadCsv(generateEmployeeTemplate(), "employees_template.csv");
-                  else if (kind === "training") downloadCsv(generateTrainingTemplate(), "training_history_template.csv");
-                  else downloadCsv(generateWorkHistoryTemplate(), "work_history_template.csv");
+                  if (kind === "employees")
+                    downloadCsv(
+                      generateEmployeeTemplate(),
+                      "employees_template.csv",
+                    );
+                  else if (kind === "training")
+                    downloadCsv(
+                      generateTrainingTemplate(),
+                      "training_history_template.csv",
+                    );
+                  else
+                    downloadCsv(
+                      generateWorkHistoryTemplate(),
+                      "work_history_template.csv",
+                    );
                 }}
                 className="gap-2 text-[var(--accent)] hover:bg-[var(--accent)]/10"
               >
@@ -1163,10 +1358,7 @@ function ReviewStep({
               {item.meta && (
                 <div className="mt-4 space-y-1 border-t border-[var(--border)] pt-3 text-xs text-[var(--muted)]">
                   <p>File: {item.meta.fileName}</p>
-                  <p>
-                    Imported:{" "}
-                    {formatRelativeTime(item.meta.importedAt)}
-                  </p>
+                  <p>Imported: {formatRelativeTime(item.meta.importedAt)}</p>
                 </div>
               )}
             </div>
@@ -1205,11 +1397,15 @@ function SuccessStep() {
           You&apos;re all set!
         </h2>
         <p className="mx-auto mt-3 max-w-md text-base leading-7 text-emerald-800/80">
-          All datasets have been imported and persisted. Your workforce analytics
-          workspace is ready.
+          All datasets have been imported and persisted. Your workforce
+          analytics workspace is ready.
         </p>
         <div className="mt-8">
-          <Button asChild size="lg" className="gap-2 bg-emerald-600 px-8 hover:bg-emerald-700">
+          <Button
+            asChild
+            size="lg"
+            className="gap-2 bg-emerald-600 px-8 hover:bg-emerald-700"
+          >
             <Link href="/">
               <LayoutDashboard className="h-4 w-4" />
               Open Dashboard
@@ -1238,9 +1434,7 @@ function ResetConfirmationDialog({
             <AlertTriangle className="h-5 w-5" />
           </div>
           <div>
-            <h3 className="text-lg font-semibold">
-              Reset All Imported Data?
-            </h3>
+            <h3 className="text-lg font-semibold">Reset All Imported Data?</h3>
             <p className="mt-2 text-sm leading-7 text-[var(--muted)]">
               This will permanently remove:
             </p>
@@ -1268,10 +1462,7 @@ function ResetConfirmationDialog({
           <Button variant="secondary" onClick={onCancel}>
             Cancel
           </Button>
-          <Button
-            onClick={onConfirm}
-            className="bg-red-600 hover:bg-red-700"
-          >
+          <Button onClick={onConfirm} className="bg-red-600 hover:bg-red-700">
             Reset Everything
           </Button>
         </div>
@@ -1312,10 +1503,19 @@ function ValidationSummaryCard({
           <p className="mt-1 text-sm text-[var(--muted)]">{fileName}</p>
         </div>
         <div className="flex items-center gap-2">
-          <div className={`rounded-full border px-3 py-1 text-xs font-semibold ${ratingColors[summary.healthStatus]}`}>
-            Dataset Health: {summary.healthScore.toFixed(1)}% ({summary.healthStatus})
+          <div
+            className={`rounded-full border px-3 py-1 text-xs font-semibold ${ratingColors[summary.healthStatus]}`}
+          >
+            Dataset Health: {summary.healthScore.toFixed(1)}% (
+            {summary.healthStatus})
           </div>
-          <Badge className={summary.invalidRecords === 0 ? "bg-emerald-50/80 text-emerald-700 border border-emerald-200/50" : "bg-rose-50/80 text-rose-700 border border-rose-200/50"}>
+          <Badge
+            className={
+              summary.invalidRecords === 0
+                ? "bg-emerald-50/80 text-emerald-700 border border-emerald-200/50"
+                : "bg-rose-50/80 text-rose-700 border border-rose-200/50"
+            }
+          >
             {summary.invalidRecords === 0 ? "Ready to Import" : "Review Errors"}
           </Badge>
         </div>
@@ -1376,7 +1576,10 @@ function ReplacementWarningCard({
               label="Current Employee Count"
               value={currentEmployeeCount}
             />
-            <WarningMetric label="New Employee Count" value={newEmployeeCount} />
+            <WarningMetric
+              label="New Employee Count"
+              value={newEmployeeCount}
+            />
             <WarningMetric
               label="Last Import Date"
               value={lastImportDate ? formatDateLabel(lastImportDate) : "--"}
@@ -1491,7 +1694,10 @@ type IssueCategoryGroup = {
 function getIssueCategories(issues: ImportIssue[]): IssueCategoryGroup[] {
   const groups: Record<string, IssueCategoryGroup> = {};
 
-  const templates: Record<string, { title: string; expected: string; suggestion: string }> = {
+  const templates: Record<
+    string,
+    { title: string; expected: string; suggestion: string }
+  > = {
     INVALID_NRP: {
       title: "NRP Format Invalid",
       expected: "EX0001 (or other non-empty identifier)",
@@ -1520,7 +1726,8 @@ function getIssueCategories(issues: ImportIssue[]): IssueCategoryGroup[] {
     MISSING_REQUIRED: {
       title: "Missing Required Fields",
       expected: "Non-empty required field",
-      suggestion: "Make sure all required columns (NRP, Nama, Training Name, Position) are present and filled.",
+      suggestion:
+        "Make sure all required columns (NRP, Nama, Training Name, Position) are present and filled.",
     },
     UNKNOWN_BRANCH: {
       title: "Unknown Branch Code",
@@ -1530,17 +1737,20 @@ function getIssueCategories(issues: ImportIssue[]): IssueCategoryGroup[] {
     DUPLICATE_NRP: {
       title: "Duplicate NRP",
       expected: "Unique NRP across all rows",
-      suggestion: "Ensure each employee has exactly one row in the Master file.",
+      suggestion:
+        "Ensure each employee has exactly one row in the Master file.",
     },
     UNKNOWN_EMPLOYEE_NRP: {
       title: "Unknown Employee NRP Reference",
       expected: "NRP that exists in Employee Master",
-      suggestion: "Ensure the employee is imported in the Employee Master dataset first.",
+      suggestion:
+        "Ensure the employee is imported in the Employee Master dataset first.",
     },
     INVALID_PK: {
       title: "Unknown PK Value",
       expected: "BS, B+, B, C+, C, K",
-      suggestion: "PK ratings must be one of the standard performance appraisal scores.",
+      suggestion:
+        "PK ratings must be one of the standard performance appraisal scores.",
     },
     INVALID_GOLONGAN: {
       title: "Unknown Golongan",
@@ -1555,7 +1765,8 @@ function getIssueCategories(issues: ImportIssue[]): IssueCategoryGroup[] {
     DUPLICATE_EMPLOYEE_NRP: {
       title: "Duplicate Employee NRP",
       expected: "Unique NRP master records",
-      suggestion: "Remove duplicate NRP rows. Only one employee master record should exist per NRP.",
+      suggestion:
+        "Remove duplicate NRP rows. Only one employee master record should exist per NRP.",
     },
     TEMPLATE_REMINDER_ROW: {
       title: "Template Reminder Row",
@@ -1571,32 +1782,46 @@ function getIssueCategories(issues: ImportIssue[]): IssueCategoryGroup[] {
       title: "Other Validation Issues",
       expected: "Valid column value",
       suggestion: "Check the values of the affected rows.",
-    }
+    },
   };
 
   issues.forEach((issue) => {
     let code = issue.code || "OTHER";
-    
+
     // Map text messages to standard codes for resilience
     if (code === "OTHER") {
       const msg = issue.message.toLowerCase();
       if (msg.includes("nrp format") || msg.includes("nrp invalid")) {
         code = "INVALID_NRP";
-      } else if (msg.includes("nama is required") || msg.includes("missing employee name")) {
+      } else if (
+        msg.includes("nama is required") ||
+        msg.includes("missing employee name")
+      ) {
         code = "MISSING_NAME";
       } else if (msg.includes("is required")) {
         code = "MISSING_REQUIRED";
-      } else if (msg.includes("hav id not found") || msg.includes("unknown hav category") || msg.includes("hav format invalid") || msg.includes("hav category unknown")) {
+      } else if (
+        msg.includes("hav id not found") ||
+        msg.includes("unknown hav category") ||
+        msg.includes("hav format invalid") ||
+        msg.includes("hav category unknown")
+      ) {
         code = "UNKNOWN_HAV";
       } else if (msg.includes("unknown training status")) {
         code = "UNKNOWN_STATUS";
       } else if (msg.includes("unknown branch code:")) {
         code = "UNKNOWN_BRANCH";
-      } else if (msg.includes("duplicate nrp:") || msg.includes("duplicate employee nrp detected")) {
+      } else if (
+        msg.includes("duplicate nrp:") ||
+        msg.includes("duplicate employee nrp detected")
+      ) {
         code = "DUPLICATE_EMPLOYEE_NRP";
       } else if (msg.includes("references unknown employee nrp:")) {
         code = "UNKNOWN_EMPLOYEE_NRP";
-      } else if (msg.includes("invalid date format") || msg.includes("invalid training completion date")) {
+      } else if (
+        msg.includes("invalid date format") ||
+        msg.includes("invalid training completion date")
+      ) {
         code = "INVALID_DATE";
       } else if (msg.includes("unknown pk value")) {
         code = "INVALID_PK";
@@ -1648,7 +1873,9 @@ function IssueListCard({ issues }: { issues: ImportIssue[] }) {
   const [warningsOpen, setWarningsOpen] = useState(false);
   const [expandedCategory, setExpandedCategory] = useState<string | null>(null);
 
-  const errors = issues.filter((issue) => issue.type === "error" || !issue.type);
+  const errors = issues.filter(
+    (issue) => issue.type === "error" || !issue.type,
+  );
   const warnings = issues.filter((issue) => issue.type === "warning");
 
   if (issues.length === 0) {
@@ -1670,7 +1897,9 @@ function IssueListCard({ issues }: { issues: ImportIssue[] }) {
         <div className="rounded-[26px] border border-red-200 bg-red-50/40 p-5">
           <div className="flex items-center justify-between border-b border-red-100 pb-3">
             <div>
-              <p className="text-sm font-semibold text-red-950">Error Categories</p>
+              <p className="text-sm font-semibold text-red-950">
+                Error Categories
+              </p>
               <p className="text-xs text-red-700 mt-1">
                 These issues block importing and must be resolved.
               </p>
@@ -1690,15 +1919,22 @@ function IssueListCard({ issues }: { issues: ImportIssue[] }) {
                 >
                   <div className="flex items-start justify-between gap-3">
                     <div>
-                      <p className="font-semibold text-slate-800 text-sm">{cat.title}</p>
+                      <p className="font-semibold text-slate-800 text-sm">
+                        {cat.title}
+                      </p>
                       <p className="text-xs text-[var(--muted)] mt-1">
-                        Affected rows: <span className="font-medium text-slate-700">{cat.count} rows</span>
+                        Affected rows:{" "}
+                        <span className="font-medium text-slate-700">
+                          {cat.count} rows
+                        </span>
                       </p>
                     </div>
                     <Button
                       variant="ghost"
                       size="sm"
-                      onClick={() => setExpandedCategory(isExpanded ? null : cat.code)}
+                      onClick={() =>
+                        setExpandedCategory(isExpanded ? null : cat.code)
+                      }
                       className="text-xs text-[var(--accent)] hover:bg-[var(--accent)]/10 px-3 rounded-full"
                     >
                       {isExpanded ? "Hide Details" : "View Example"}
@@ -1708,21 +1944,33 @@ function IssueListCard({ issues }: { issues: ImportIssue[] }) {
                   {isExpanded && (
                     <div className="mt-4 space-y-3 border-t border-slate-100 pt-3 text-xs leading-relaxed text-slate-700">
                       <div>
-                        <span className="font-bold text-slate-600 block uppercase tracking-wider text-[10px]">Example Current Value:</span>
+                        <span className="font-bold text-slate-600 block uppercase tracking-wider text-[10px]">
+                          Example Current Value:
+                        </span>
                         <code className="mt-1 block rounded bg-slate-100 px-2 py-1 text-slate-800 font-mono text-[11px] max-w-full overflow-x-auto">
                           {cat.exampleValue}
                         </code>
                       </div>
                       <div>
-                        <span className="font-bold text-slate-600 block uppercase tracking-wider text-[10px]">Expected Value:</span>
-                        <span className="mt-1 block font-medium text-emerald-700">{cat.expected}</span>
+                        <span className="font-bold text-slate-600 block uppercase tracking-wider text-[10px]">
+                          Expected Value:
+                        </span>
+                        <span className="mt-1 block font-medium text-emerald-700">
+                          {cat.expected}
+                        </span>
                       </div>
                       <div>
-                        <span className="font-bold text-slate-600 block uppercase tracking-wider text-[10px]">Recommendation:</span>
-                        <span className="mt-1 block text-slate-900 font-medium">{cat.suggestion}</span>
+                        <span className="font-bold text-slate-600 block uppercase tracking-wider text-[10px]">
+                          Recommendation:
+                        </span>
+                        <span className="mt-1 block text-slate-900 font-medium">
+                          {cat.suggestion}
+                        </span>
                       </div>
                       <div>
-                        <span className="font-bold text-slate-600 block uppercase tracking-wider text-[10px]">Affected Row List:</span>
+                        <span className="font-bold text-slate-600 block uppercase tracking-wider text-[10px]">
+                          Affected Row List:
+                        </span>
                         <span className="mt-1 block text-[var(--muted)] break-words">
                           {cat.affectedRows.join(", ")}
                         </span>
@@ -1754,14 +2002,15 @@ function IssueListCard({ issues }: { issues: ImportIssue[] }) {
             </div>
             <div className="flex items-center gap-3">
               <span className="rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-semibold text-amber-800">
-                {warnings.length} {warnings.length === 1 ? 'Warning' : 'Warnings'}
+                {warnings.length}{" "}
+                {warnings.length === 1 ? "Warning" : "Warnings"}
               </span>
               <span className="text-xs font-bold text-amber-800 uppercase tracking-wider hover:underline">
                 {warningsOpen ? "Hide" : "View"}
               </span>
             </div>
           </button>
-          
+
           {warningsOpen && (
             <div className="p-5 max-h-[400px] overflow-y-auto">
               <div className="overflow-x-auto">
@@ -1775,7 +2024,10 @@ function IssueListCard({ issues }: { issues: ImportIssue[] }) {
                   </thead>
                   <tbody className="divide-y divide-amber-100/30">
                     {warnings.map((issue, idx) => (
-                      <tr key={`${issue.row}-${issue.message}-${idx}`} className="hover:bg-amber-55/30 transition-colors text-amber-900">
+                      <tr
+                        key={`${issue.row}-${issue.message}-${idx}`}
+                        className="hover:bg-amber-55/30 transition-colors text-amber-900"
+                      >
                         <td className="py-2.5 px-3 font-semibold uppercase tracking-wider text-[10px] text-amber-700">
                           {issue.dataset || "Unknown"}
                         </td>
@@ -1848,10 +2100,12 @@ function buildValidationSummary(
   issues: ImportIssue[],
 ): ValidationSummary {
   const errorRows = new Set(
-    issues.filter((issue) => issue.type === "error").map((issue) => issue.row)
+    issues.filter((issue) => issue.type === "error").map((issue) => issue.row),
   );
   const warningRows = new Set(
-    issues.filter((issue) => issue.type === "warning").map((issue) => issue.row)
+    issues
+      .filter((issue) => issue.type === "warning")
+      .map((issue) => issue.row),
   );
 
   const invalidRecords = errorRows.size;
@@ -1868,13 +2122,24 @@ function buildValidationSummary(
     issue.message.startsWith("Duplicate NRP:"),
   ).length;
   const unknownEmployeeNrp = issues.filter((issue) =>
-    issue.message.startsWith("Training record references unknown employee NRP:"),
+    issue.message.startsWith(
+      "Training record references unknown employee NRP:",
+    ),
   ).length;
 
-  const warningCount = issues.filter((issue) => issue.type === "warning").length;
-  const healthScore = totalRecords > 0
-    ? Math.max(0, Math.min(100, ((validRecords - warningCount * 0.2) / totalRecords) * 100))
-    : 100;
+  const warningCount = issues.filter(
+    (issue) => issue.type === "warning",
+  ).length;
+  const healthScore =
+    totalRecords > 0
+      ? Math.max(
+          0,
+          Math.min(
+            100,
+            ((validRecords - warningCount * 0.2) / totalRecords) * 100,
+          ),
+        )
+      : 100;
 
   let healthStatus: "Excellent" | "Good" | "Fair" | "Poor" = "Excellent";
   if (healthScore >= 95) {
@@ -1922,19 +2187,25 @@ function ImportConfirmationModal({
         <h2 className="text-xl font-bold tracking-tight text-slate-900">
           Import Validation Result
         </h2>
-        
+
         <div className="mt-5 space-y-3 rounded-2xl bg-slate-50 p-4 text-sm font-medium text-slate-700">
           <div className="flex justify-between">
             <span>Valid Rows:</span>
-            <span className="text-emerald-700 font-semibold">{summary.validRecords}</span>
+            <span className="text-emerald-700 font-semibold">
+              {summary.validRecords}
+            </span>
           </div>
           <div className="flex justify-between">
             <span>Warning Rows:</span>
-            <span className="text-amber-700 font-semibold">{summary.warningRecords}</span>
+            <span className="text-amber-700 font-semibold">
+              {summary.warningRecords}
+            </span>
           </div>
           <div className="flex justify-between">
             <span>Error Rows:</span>
-            <span className="text-red-600 font-semibold">{summary.invalidRecords}</span>
+            <span className="text-red-600 font-semibold">
+              {summary.invalidRecords}
+            </span>
           </div>
         </div>
 
